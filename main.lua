@@ -1,40 +1,39 @@
 --[[
-    redz Hub v3 — main.lua (Blox Fruits - Standalone / No External Data Files)
-    Full Auto Farm, Built-in Quest Engine, Fast Attack, Bring Mobs & Auto Stats
+    redz Hub v3 — main.lua (Blox Fruits - Complete & Standalone Edition)
+    Features: Full Auto Farm, Quest System, Air Hover, Fast Attack, Bring Mobs, Auto Stats, Teleports, & Fruit Store
 --]]
 
 --// Services
-local Players           = game:GetService("Players")
-local RunService        = game:GetService("RunService")
-local UserInputService  = game:GetService("UserInputService")
-local TweenService      = game:GetService("TweenService")
-local CoreGui           = game:GetService("CoreGui")
-local HttpService       = game:GetService("HttpService")
+local Players         = game:GetService("Players")
+local RunService      = game:GetService("RunService")
+local UserInputService= game:GetService("UserInputService")
+local TweenService    = game:GetService("TweenService")
+local CoreGui         = game:GetService("CoreGui")
+local HttpService     = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser       = game:GetService("VirtualUser")
-local TeleportService   = game:GetService("TeleportService")
+local VirtualUser     = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
 --// ═══════════════════════════════════════════
---// BUILT-IN FARM & QUEST DATA (Standalone)
+--// BUILT-IN FARM & QUEST DATA
 --// ═══════════════════════════════════════════
 local LevelData = {
-    -- Sea 1 / Starter Levels
-    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",  QuestLvl = 1 },
-    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",   QuestLvl = 1 },
-    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",   QuestLvl = 1 },
-    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",   QuestLvl = 1 },
-    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",     QuestLvl = 1 },
-    { MinLvl = 120, MaxLvl = 149, Mob = "Chief Petty Officer", Quest = "MarineQuest2", QuestLvl = 1 },
-    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",           Quest = "SkyQuest",      QuestLvl = 1 },
-    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",             Quest = "PrisonerQuest", QuestLvl = 1 },
-    { MinLvl = 250, MaxLvl = 299, Mob = "Toga Warrior",         Quest = "ColosseumQuest",QuestLvl = 1 },
-    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",    QuestLvl = 1 },
-    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",  QuestLvl = 1 },
-    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",  QuestLvl = 1 },
-    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",  QuestLvl = 1 },
-    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest", QuestLvl = 1 },
+    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",   QuestLvl = 1, NPCPos = Vector3.new(1059, 16, 1549) },
+    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",    QuestLvl = 1, NPCPos = Vector3.new(-1600, 37, 153) },
+    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",    QuestLvl = 1, NPCPos = Vector3.new(-1140, 4, 3828) },
+    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",    QuestLvl = 1, NPCPos = Vector3.new(894, 6, 4384) },
+    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",      QuestLvl = 1, NPCPos = Vector3.new(1385, 87, -1298) },
+    { MinLvl = 120, MaxLvl = 149, Mob = "Chief Petty Officer", Quest = "MarineQuest2",    QuestLvl = 1, NPCPos = Vector3.new(-5035, 20, 4323) },
+    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",          Quest = "SkyQuest",       QuestLvl = 1, NPCPos = Vector3.new(-4840, 718, -2620) },
+    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",             Quest = "PrisonerQuest",  QuestLvl = 1, NPCPos = Vector3.new(530, 2, 482) },
+    { MinLvl = 250, MaxLvl = 299, Mob = "Toga Warrior",         Quest = "ColosseumQuest", QuestLvl = 1, NPCPos = Vector3.new(-1580, 7, -2980) },
+    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",     QuestLvl = 1, NPCPos = Vector3.new(-5315, 12, 8515) },
+    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",   QuestLvl = 1, NPCPos = Vector3.new(61122, 18, 1569) },
+    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",   QuestLvl = 1, NPCPos = Vector3.new(-4720, 845, -1950) },
+    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",   QuestLvl = 1, NPCPos = Vector3.new(-7860, 5545, -380) },
+    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest",  QuestLvl = 1, NPCPos = Vector3.new(5258, 39, 4050) },
 }
 
 local function getTargetData(level)
@@ -43,8 +42,7 @@ local function getTargetData(level)
             return data
         end
     end
-    -- Fallback for levels exceeding table bounds
-    return { Mob = "Bandit", Quest = "BanditQuest1", QuestLvl = 1 }
+    return LevelData[1]
 end
 
 --// ═══════════════════════════════════════════
@@ -52,9 +50,7 @@ end
 --// ═══════════════════════════════════════════
 local Config = {
     FlightSpeed     = 250,
-    FlightHeight    = 12,
-    ClickDelay      = 0.01,
-    HitboxSize      = 25,
+    HoverHeight     = 10,
     BringMobDistance= 40,
     SelectedWeapon  = "Melee", -- "Melee", "Blox Fruit", "Sword", "Gun"
     
@@ -63,9 +59,6 @@ local Config = {
     AutoStatDefense = false,
     AutoStatSword   = false,
     AutoStatFruit   = false,
-
-    -- Safety
-    AntiAFK         = true,
 
     -- UI Colors Theme
     Colors = {
@@ -87,7 +80,7 @@ local Config = {
 }
 
 --// ═══════════════════════════════════════════
---// STATE
+--// STATE MANAGEMENT
 --// ═══════════════════════════════════════════
 local State = {
     AutoFarmON    = false,
@@ -105,10 +98,6 @@ local State = {
 --// ═══════════════════════════════════════════
 --// HELPER UTILITIES
 --// ═══════════════════════════════════════════
-local function getChar() 
-    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() 
-end
-
 local function getHRP() 
     local c = LocalPlayer.Character 
     return c and c:FindFirstChild("HumanoidRootPart") 
@@ -120,25 +109,18 @@ local function getHumanoid()
 end
 
 local function getLevel()
-    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    local ls = LocalPlayer:FindFirstChild("Data") or LocalPlayer:FindFirstChild("leaderstats")
     if not ls then return 1 end
     local lvl = ls:FindFirstChild("Level")
     return lvl and lvl.Value or 1
 end
 
-local function distance(a, b)
-    if not a or not b then return math.huge end
-    return (a.Position - b.Position).Magnitude
-end
-
 -- Anti-AFK Handler
-if Config.AntiAFK then
-    LocalPlayer.Idled:Connect(function()
-        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    end)
-end
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
 
 -- Auto Equip Weapon
 local function equipWeapon()
@@ -146,18 +128,15 @@ local function equipWeapon()
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     if not char or not backpack then return end
 
+    local currentTool = char:FindFirstChildOfClass("Tool")
+    if currentTool then return end
+
     for _, tool in ipairs(backpack:GetChildren()) do
         if tool:IsA("Tool") then
-            if Config.SelectedWeapon == "Melee" and tool.ToolTip == "Melee" then
-                getHumanoid():EquipTool(tool)
-                break
-            elseif Config.SelectedWeapon == "Blox Fruit" and (tool.ToolTip == "Blox Fruit" or tool.ToolTip == "Devil Fruit") then
-                getHumanoid():EquipTool(tool)
-                break
-            elseif Config.SelectedWeapon == "Sword" and tool.ToolTip == "Sword" then
-                getHumanoid():EquipTool(tool)
-                break
-            elseif Config.SelectedWeapon == "Gun" and tool.ToolTip == "Gun" then
+            if (Config.SelectedWeapon == "Melee" and tool.ToolTip == "Melee") or
+               (Config.SelectedWeapon == "Blox Fruit" and (tool.ToolTip == "Blox Fruit" or tool.ToolTip == "Devil Fruit")) or
+               (Config.SelectedWeapon == "Sword" and tool.ToolTip == "Sword") or
+               (Config.SelectedWeapon == "Gun" and tool.ToolTip == "Gun") then
                 getHumanoid():EquipTool(tool)
                 break
             end
@@ -177,44 +156,51 @@ local function checkHaki()
 end
 
 -- Fast Movement Engine
-local function flyTo(targetCFrame)
-    if not targetCFrame then return false end
+local function flyTo(targetPos)
     local hrp = getHRP()
-    if not hrp then return false end
+    if not hrp or not targetPos then return end
 
-    local targetPos = (typeof(targetCFrame) == "CFrame") and targetCFrame.Position or targetCFrame
-    local destPos = targetPos + Vector3.new(0, Config.FlightHeight, 0)
-    local dist = (hrp.Position - destPos).Magnitude
-    local duration = math.max(dist / Config.FlightSpeed, 0.05)
+    local dist = (hrp.Position - targetPos).Magnitude
+    if dist < 15 then 
+        hrp.CFrame = CFrame.new(targetPos)
+        return 
+    end
 
+    local duration = dist / Config.FlightSpeed
     local tween = TweenService:Create(
         hrp,
         TweenInfo.new(duration, Enum.EasingStyle.Linear),
-        { CFrame = CFrame.new(destPos, targetPos) }
+        { CFrame = CFrame.new(targetPos) }
     )
     tween:Play()
-
-    local startTime = tick()
-    while tween.PlaybackState == Enum.PlaybackState.Playing do
-        if State.StopFlag then tween:Cancel(); return false end
-        if tick() - startTime > duration + 1.5 then tween:Cancel(); break end
-        task.wait(0.02)
+    
+    local elapsed = 0
+    while tween.PlaybackState == Enum.PlaybackState.Playing and not State.StopFlag do
+        task.wait(0.05)
+        elapsed = elapsed + 0.05
+        if elapsed > duration + 1 then tween:Cancel(); break end
     end
-    return true
 end
 
--- Hitbox Scaler
-local function applyHitbox()
-    local char = LocalPlayer.Character
-    if not char then return end
-    for _, v in ipairs(char:GetDescendants()) do
-        if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-            v.Size = Vector3.new(Config.HitboxSize, Config.HitboxSize, Config.HitboxSize)
-            v.Transparency = 1
-            v.CanCollide = false
+-- Ultra Fast Attack Thread
+task.spawn(function()
+    while true do
+        task.wait(0.01)
+        if State.AutoFarmON and State.FastAttackON then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local tool = char and char:FindFirstChildOfClass("Tool")
+                if tool then
+                    tool:Activate()
+                    local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+                    if net then
+                        net:FindFirstChild("RE/RegisterAttack"):FireServer()
+                    end
+                end
+            end)
         end
     end
-end
+end)
 
 -- Bring Mobs Engine
 local function bringNearestMobs(primaryEnemy)
@@ -224,10 +210,10 @@ local function bringNearestMobs(primaryEnemy)
 
     local folder = workspace:FindFirstChild("Enemies") or workspace
     for _, mob in ipairs(folder:GetChildren()) do
-        if mob:IsA("Model") and mob ~= primaryEnemy then
+        if mob:IsA("Model") and mob ~= primaryEnemy and mob.Name == primaryEnemy.Name then
             local h = mob:FindFirstChildOfClass("Humanoid")
             local mHrp = mob:FindFirstChild("HumanoidRootPart")
-            if h and mHrp and h.Health > 0 and mob.Name == primaryEnemy.Name then
+            if h and mHrp and h.Health > 0 then
                 if (mHrp.Position - primaryHrp.Position).Magnitude <= Config.BringMobDistance then
                     mHrp.CFrame = primaryHrp.CFrame
                     mHrp.CanCollide = false
@@ -238,11 +224,22 @@ local function bringNearestMobs(primaryEnemy)
     end
 end
 
--- Quest Manager
-local function acceptQuest(questName, questLevel)
+-- Quest Engine
+local function hasQuest()
+    local gui = LocalPlayer:FindFirstChild("PlayerGui")
+    local mainGui = gui and gui:FindFirstChild("Main")
+    local questFrame = mainGui and mainGui:FindFirstChild("Quest")
+    return questFrame and questFrame.Visible
+end
+
+local function acceptQuest(targetData)
+    if hasQuest() then return end
+    flyTo(targetData.NPCPos)
+    task.wait(0.3)
     pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", questName, questLevel)
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", targetData.Quest, targetData.QuestLvl)
     end)
+    task.wait(0.3)
 end
 
 -- Find Active Target Mobs
@@ -253,49 +250,61 @@ local function findNearestTarget(mobName)
     local folder = workspace:FindFirstChild("Enemies") or workspace
 
     for _, obj in ipairs(folder:GetChildren()) do
-        if obj:IsA("Model") then
+        if obj:IsA("Model") and obj.Name:lower():find(mobName:lower(), 1, true) then
             local h = obj:FindFirstChildOfClass("Humanoid")
             local objHrp = obj:FindFirstChild("HumanoidRootPart")
             if h and objHrp and h.Health > 0 then
-                if obj.Name:lower():find(mobName:lower(), 1, true) then
-                    local d = distance(hrp, objHrp)
-                    if d < closestDist then closest, closestDist = obj, d end
-                end
+                local d = (hrp.Position - objHrp.Position).Magnitude
+                if d < closestDist then closest, closestDist = obj, d end
             end
         end
     end
     return closest
 end
 
--- Attack Execution
+-- Air Farm Execution
 local function executeAttack(targetModel)
-    if not targetModel then return end
     local enemyHrp = targetModel:FindFirstChild("HumanoidRootPart")
     local enemyHum = targetModel:FindFirstChildOfClass("Humanoid")
-    if not enemyHrp or not enemyHum then return end
+    local hrp = getHRP()
+
+    if not enemyHrp or not enemyHum or not hrp then return end
+
+    -- Hover Stabilization Mechanics
+    local bv = Instance.new("BodyVelocity")
+    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+    bv.Velocity = Vector3.zero
+    bv.Parent = hrp
+
+    local bg = Instance.new("BodyGyro")
+    bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+    bg.CFrame = hrp.CFrame
+    bg.Parent = hrp
 
     local startTime = tick()
-    while not State.StopFlag do
+    while not State.StopFlag and State.AutoFarmON do
         if not enemyHum or enemyHum.Health <= 0 or not enemyHrp.Parent then break end
+
+        -- Freeze/Float Character directly above target mob
+        local hoverPos = enemyHrp.Position + Vector3.new(0, Config.HoverHeight, 0)
+        hrp.CFrame = CFrame.new(hoverPos, enemyHrp.Position)
 
         equipWeapon()
         checkHaki()
-        applyHitbox()
         bringNearestMobs(targetModel)
 
-        if State.FastAttackON then
-            VirtualUser:CaptureController()
-            VirtualUser:Button1Down(Vector2.new(0, 0))
-            VirtualUser:Button1Up(Vector2.new(0, 0))
-        end
-
-        task.wait(Config.ClickDelay)
-        if tick() - startTime > 12 then break end
+        task.wait(0.05)
+        if tick() - startTime > 15 then break end
     end
-    State.KilledCount = State.KilledCount + 1
+
+    bv:Destroy()
+    bg:Destroy()
+    if enemyHum and enemyHum.Health <= 0 then
+        State.KilledCount = State.KilledCount + 1
+    end
 end
 
--- Auto Stat Distributor
+-- Auto Stat Distributor Thread
 task.spawn(function()
     while task.wait(1) do
         if Config.AutoStatMelee then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Melee", 1) end
@@ -313,17 +322,17 @@ local function autoFarmLoop()
     State.Running = true
     State.StopFlag = false
 
-    while not State.StopFlag do
-        if not State.AutoFarmON then break end
-        if not LocalPlayer.Character then task.wait(0.5); continue end
+    while not State.StopFlag and State.AutoFarmON do
+        local char = LocalPlayer.Character
+        if not char or not getHRP() then task.wait(0.5); continue end
 
         State.Level = getLevel()
         local targetInfo = getTargetData(State.Level)
 
         -- Accept Quest
-        if State.AutoQuestON and targetInfo.Quest then
+        if State.AutoQuestON then
             State.CurrentTask = "Quest: " .. targetInfo.Quest
-            acceptQuest(targetInfo.Quest, targetInfo.QuestLvl)
+            acceptQuest(targetInfo)
         end
 
         -- Find Target
@@ -332,11 +341,11 @@ local function autoFarmLoop()
 
         if enemy and enemy:FindFirstChild("HumanoidRootPart") then
             State.CurrentTask = "Attacking " .. enemy.Name
-            flyTo(enemy.HumanoidRootPart.CFrame)
             executeAttack(enemy)
         else
             State.CurrentTask = "Waiting for " .. targetInfo.Mob .. " Spawns..."
-            task.wait(0.5)
+            flyTo(targetInfo.NPCPos + Vector3.new(0, 20, 0))
+            task.wait(1)
         end
     end
 
@@ -408,7 +417,7 @@ create("TextLabel", {
 
 create("TextLabel", {
     Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 24),
-    Size = UDim2.new(0, 200, 0, 12), Font = Config.Font, Text = "Standalone OP Edition | v3.0",
+    Size = UDim2.new(0, 200, 0, 12), Font = Config.Font, Text = "Standalone OP Edition | v3.0 (Fixed)",
     TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
 })
 
@@ -667,11 +676,13 @@ do
     addToggle(page, "Auto Accept Quests", true, function(v) State.AutoQuestON = v end)
 
     addSection(page, "WEAPON SELECTION")
-    addButton(page, "Weapon: " .. Config.SelectedWeapon, function()
+    local wBtn
+    wBtn = addButton(page, "Weapon: " .. Config.SelectedWeapon, function()
         if Config.SelectedWeapon == "Melee" then Config.SelectedWeapon = "Blox Fruit"
         elseif Config.SelectedWeapon == "Blox Fruit" then Config.SelectedWeapon = "Sword"
         elseif Config.SelectedWeapon == "Sword" then Config.SelectedWeapon = "Gun"
         else Config.SelectedWeapon = "Melee" end
+        wBtn.Text = "Weapon: " .. Config.SelectedWeapon
     end)
 
     addSection(page, "LIVE MONITOR")
@@ -697,7 +708,7 @@ do
 
     addSection(page, "TWEAKS & SLIDERS")
     addSlider(page, "Flight Speed", 100, 350, 250, function(v) Config.FlightSpeed = v end)
-    addSlider(page, "Hitbox Extender", 5, 60, 25, function(v) Config.HitboxSize = v end)
+    addSlider(page, "Hover Altitude", 5, 25, 10, function(v) Config.HoverHeight = v end)
     addSlider(page, "Bring Radius", 10, 100, 40, function(v) Config.BringMobDistance = v end)
 end
 
@@ -769,9 +780,9 @@ end
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "redz Hub v3",
-        Text = "Loaded standalone Blox Fruits OP Hub!",
+        Text = "Loaded full standalone script successfully!",
         Duration = 5,
     })
 end)
 
-print("[redz Hub v3] Standalone script loaded successfully!")
+print("[redz Hub v3] Full standalone script loaded successfully!")
