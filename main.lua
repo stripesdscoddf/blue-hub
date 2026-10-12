@@ -1,6 +1,6 @@
 --[[
-    redz Hub v3 — main.lua (Blox Fruits - Sea 1, 2, 3)
-    Full Auto Farm, Quest System, Fast Attack, Bring Mobs, Auto Stats & Sea Events
+    redz Hub v3 — main.lua (Blox Fruits - Standalone / No External Data Files)
+    Full Auto Farm, Built-in Quest Engine, Fast Attack, Bring Mobs & Auto Stats
 --]]
 
 --// Services
@@ -16,15 +16,36 @@ local TeleportService   = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
---// Github Base Path
-local BASE_URL = "https://raw.githubusercontent.com/isaquegoat/redz-hub/main/"
+--// ═══════════════════════════════════════════
+--// BUILT-IN FARM & QUEST DATA (Standalone)
+--// ═══════════════════════════════════════════
+local LevelData = {
+    -- Sea 1 / Starter Levels
+    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",  QuestLvl = 1 },
+    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",   QuestLvl = 1 },
+    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",   QuestLvl = 1 },
+    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",   QuestLvl = 1 },
+    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",     QuestLvl = 1 },
+    { MinLvl = 120, MaxLvl = 149, Mob = "Chief Petty Officer", Quest = "MarineQuest2", QuestLvl = 1 },
+    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",           Quest = "SkyQuest",      QuestLvl = 1 },
+    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",             Quest = "PrisonerQuest", QuestLvl = 1 },
+    { MinLvl = 250, MaxLvl = 299, Mob = "Toga Warrior",         Quest = "ColosseumQuest",QuestLvl = 1 },
+    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",    QuestLvl = 1 },
+    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",  QuestLvl = 1 },
+    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",  QuestLvl = 1 },
+    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",  QuestLvl = 1 },
+    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest", QuestLvl = 1 },
+}
 
---// Load External Level & Boss Modules (Fallback safe)
-local LevelData, BossData
-pcall(function()
-    LevelData = loadstring(game:HttpGet(BASE_URL .. "LevelData.lua"))()
-    BossData  = loadstring(game:HttpGet(BASE_URL .. "BossData.lua"))()
-end)
+local function getTargetData(level)
+    for _, data in ipairs(LevelData) do
+        if level >= data.MinLvl and level <= data.MaxLvl then
+            return data
+        end
+    end
+    -- Fallback for levels exceeding table bounds
+    return { Mob = "Bandit", Quest = "BanditQuest1", QuestLvl = 1 }
+end
 
 --// ═══════════════════════════════════════════
 --// CONFIGURATION
@@ -37,16 +58,14 @@ local Config = {
     BringMobDistance= 40,
     SelectedWeapon  = "Melee", -- "Melee", "Blox Fruit", "Sword", "Gun"
     
-    -- Auto Stats Flags
+    -- Auto Stats
     AutoStatMelee   = false,
     AutoStatDefense = false,
     AutoStatSword   = false,
     AutoStatFruit   = false,
 
-    -- Anti-detection & Safety
+    -- Safety
     AntiAFK         = true,
-    PauseChance     = 0.005,
-    PauseDuration   = 1.5,
 
     -- UI Colors Theme
     Colors = {
@@ -76,8 +95,6 @@ local State = {
     FastAttackON  = true,
     BringMobsON   = true,
     AutoHakiON    = true,
-    KillBossON    = true,
-    AutoChestON   = false,
     Running       = false,
     StopFlag      = false,
     CurrentTask   = "Idle",
@@ -123,7 +140,7 @@ if Config.AntiAFK then
     end)
 end
 
--- Auto Equip Selected Weapon Category
+-- Auto Equip Weapon
 local function equipWeapon()
     local char = LocalPlayer.Character
     local backpack = LocalPlayer:FindFirstChild("Backpack")
@@ -159,7 +176,7 @@ local function checkHaki()
     end
 end
 
--- Fast Movement Engine (CFrame Tweening)
+-- Fast Movement Engine
 local function flyTo(targetCFrame)
     if not targetCFrame then return false end
     local hrp = getHRP()
@@ -186,7 +203,7 @@ local function flyTo(targetCFrame)
     return true
 end
 
--- Hitbox Scaling Logic
+-- Hitbox Scaler
 local function applyHitbox()
     local char = LocalPlayer.Character
     if not char then return end
@@ -228,8 +245,8 @@ local function acceptQuest(questName, questLevel)
     end)
 end
 
--- Find Active Mob Targets
-local function findNearestTarget(enemyNames)
+-- Find Active Target Mobs
+local function findNearestTarget(mobName)
     local hrp = getHRP()
     if not hrp then return nil end
     local closest, closestDist = nil, math.huge
@@ -240,12 +257,9 @@ local function findNearestTarget(enemyNames)
             local h = obj:FindFirstChildOfClass("Humanoid")
             local objHrp = obj:FindFirstChild("HumanoidRootPart")
             if h and objHrp and h.Health > 0 then
-                for _, name in ipairs(enemyNames) do
-                    if obj.Name:lower():find(name:lower(), 1, true) then
-                        local d = distance(hrp, objHrp)
-                        if d < closestDist then closest, closestDist = obj, d end
-                        break
-                    end
+                if obj.Name:lower():find(mobName:lower(), 1, true) then
+                    local d = distance(hrp, objHrp)
+                    if d < closestDist then closest, closestDist = obj, d end
                 end
             end
         end
@@ -253,7 +267,7 @@ local function findNearestTarget(enemyNames)
     return closest
 end
 
--- Attack Execution Engine
+-- Attack Execution
 local function executeAttack(targetModel)
     if not targetModel then return end
     local enemyHrp = targetModel:FindFirstChild("HumanoidRootPart")
@@ -269,7 +283,6 @@ local function executeAttack(targetModel)
         applyHitbox()
         bringNearestMobs(targetModel)
 
-        -- Fast Attack Simulation via VirtualUser Trigger
         if State.FastAttackON then
             VirtualUser:CaptureController()
             VirtualUser:Button1Down(Vector2.new(0, 0))
@@ -277,7 +290,7 @@ local function executeAttack(targetModel)
         end
 
         task.wait(Config.ClickDelay)
-        if tick() - startTime > 12 then break end -- Safety timeout per mob
+        if tick() - startTime > 12 then break end
     end
     State.KilledCount = State.KilledCount + 1
 end
@@ -305,40 +318,24 @@ local function autoFarmLoop()
         if not LocalPlayer.Character then task.wait(0.5); continue end
 
         State.Level = getLevel()
+        local targetInfo = getTargetData(State.Level)
 
-        -- Fetch Level Target Data
-        local info = LevelData and LevelData.GetFor and LevelData.GetFor(State.Level)
-        if not info then
-            State.CurrentTask = "Farming level: " .. State.Level
-            local targets = LevelData and LevelData.GetEnemyList and LevelData.GetEnemyList(State.Level) or {"Bandit"}
-            local enemy = findNearestTarget(targets)
-            if enemy then
-                flyTo(enemy.HumanoidRootPart.CFrame)
-                executeAttack(enemy)
-            else
-                State.CurrentTask = "Searching for targets..."
-                task.wait(1)
-            end
-            continue
+        -- Accept Quest
+        if State.AutoQuestON and targetInfo.Quest then
+            State.CurrentTask = "Quest: " .. targetInfo.Quest
+            acceptQuest(targetInfo.Quest, targetInfo.QuestLvl)
         end
 
-        -- Auto Quest Logic
-        if State.AutoQuestON and info.QuestName then
-            State.CurrentTask = "Taking Quest: " .. info.QuestName
-            acceptQuest(info.QuestName, info.QuestLevel or 1)
-        end
-
-        -- Target Execution
-        local enemyList = LevelData.GetEnemyList(State.Level)
-        State.CurrentTask = "Tracking: " .. table.concat(enemyList, ", ")
-        local enemy = findNearestTarget(enemyList)
+        -- Find Target
+        State.CurrentTask = "Hunting: " .. targetInfo.Mob
+        local enemy = findNearestTarget(targetInfo.Mob)
 
         if enemy and enemy:FindFirstChild("HumanoidRootPart") then
-            State.CurrentTask = "Engaging " .. enemy.Name
+            State.CurrentTask = "Attacking " .. enemy.Name
             flyTo(enemy.HumanoidRootPart.CFrame)
             executeAttack(enemy)
         else
-            State.CurrentTask = "Waiting for Spawns..."
+            State.CurrentTask = "Waiting for " .. targetInfo.Mob .. " Spawns..."
             task.wait(0.5)
         end
     end
@@ -393,20 +390,14 @@ local ScreenGui = create("ScreenGui", {
 })
 
 local Main = create("Frame", {
-    Name = "Main",
-    Parent = ScreenGui,
-    BackgroundColor3 = Config.Colors.Background,
-    BackgroundTransparency = 0.05,
-    BorderSizePixel = 0,
-    Size = UDim2.new(0, 640, 0, 430),
-    Position = UDim2.new(0.5, -320, 0.5, -215),
-    Active = true,
-    Draggable = true,
+    Name = "Main", Parent = ScreenGui, BackgroundColor3 = Config.Colors.Background,
+    BackgroundTransparency = 0.05, BorderSizePixel = 0, Size = UDim2.new(0, 640, 0, 430),
+    Position = UDim2.new(0.5, -320, 0.5, -215), Active = true, Draggable = true,
 })
 corner(Main, 10)
 stroke(Main, Config.Colors.Border, 1, 0.3)
 
--- Topbar Section
+-- Topbar
 local TopBar = create("Frame", { Name = "TopBar", Parent = Main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42) })
 
 create("TextLabel", {
@@ -417,11 +408,11 @@ create("TextLabel", {
 
 create("TextLabel", {
     Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 24),
-    Size = UDim2.new(0, 200, 0, 12), Font = Config.Font, Text = "OP Auto Farm Suite | v3.0",
+    Size = UDim2.new(0, 200, 0, 12), Font = Config.Font, Text = "Standalone OP Edition | v3.0",
     TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
 })
 
--- Controls Container
+-- Controls
 local btnContainer = create("Frame", { Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(1, -76, 0, 10), Size = UDim2.new(0, 66, 0, 22) })
 
 local function makeWinBtn(text, xPos, hoverColor, callback)
@@ -453,7 +444,7 @@ makeWinBtn("✕", 24, Color3.fromRGB(200, 35, 45), function()
     State.StopFlag = true
 end)
 
--- Sidebar Setup
+-- Sidebar
 local Sidebar = create("Frame", {
     Parent = Main, BackgroundColor3 = Config.Colors.Sidebar, BackgroundTransparency = 0.1,
     BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, 42), Size = UDim2.new(0, 150, 1, -42),
@@ -470,7 +461,7 @@ local Content = create("Frame", {
     Parent = Main, BackgroundTransparency = 1, Position = UDim2.new(0, 150, 0, 42), Size = UDim2.new(1, -150, 1, -42),
 })
 
--- UI Categories Mapping
+-- UI Categories
 local CATEGORIES = {
     "Main Farming", "Combat & OP Mods", "Auto Stats", 
     "Teleports & Seas", "Fruit & Raids", "Settings & Info"
@@ -527,7 +518,7 @@ for _, catName in ipairs(CATEGORIES) do
     Pages[catName] = page
 end
 
--- Component Helpers
+-- UI Controls Helpers
 local function addSection(page, text)
     return create("TextLabel", {
         Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 18),
@@ -673,11 +664,10 @@ do
         State.AutoFarmON = v
         if v then task.spawn(autoFarmLoop) else State.StopFlag = true end
     end)
-    addToggle(page, "Auto Complete Quests", true, function(v) State.AutoQuestON = v end)
-    addToggle(page, "Target Bosses First", true, function(v) State.KillBossON = v end)
+    addToggle(page, "Auto Accept Quests", true, function(v) State.AutoQuestON = v end)
 
     addSection(page, "WEAPON SELECTION")
-    addButton(page, "Select Weapon: " .. Config.SelectedWeapon, function()
+    addButton(page, "Weapon: " .. Config.SelectedWeapon, function()
         if Config.SelectedWeapon == "Melee" then Config.SelectedWeapon = "Blox Fruit"
         elseif Config.SelectedWeapon == "Blox Fruit" then Config.SelectedWeapon = "Sword"
         elseif Config.SelectedWeapon == "Sword" then Config.SelectedWeapon = "Gun"
@@ -740,7 +730,7 @@ end
 do
     local page = Pages["Fruit & Raids"]
     addSection(page, "FRUIT UTILITIES")
-    addButton(page, "Random Fruit Sniper / Buyer", function()
+    addButton(page, "Buy Random Fruit", function()
         pcall(function()
             ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin", "Buy")
         end)
@@ -766,7 +756,7 @@ do
     end)
 end
 
--- Initialize default active tab
+-- Default active tab
 if buttons[1] then
     buttons[1].BackgroundTransparency = 0.4
     buttons[1].TextColor3 = Config.Colors.Text
@@ -775,13 +765,13 @@ if buttons[1] then
     switchPage("Main Farming")
 end
 
--- Load Confirmation
+-- Notification
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "redz Hub v3",
-        Text = "Successfully loaded Blox Fruits OP Hub!",
+        Text = "Loaded standalone Blox Fruits OP Hub!",
         Duration = 5,
     })
 end)
 
-print("[redz Hub v3] Main script executed successfully!")
+print("[redz Hub v3] Standalone script loaded successfully!")
