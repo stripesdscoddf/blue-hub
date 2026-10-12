@@ -1,18 +1,22 @@
--- Blue Hub (by bluescriptz) - Deobfuscated & Restructured UI
+-- Blue Hub (by bluescriptz) - Full Script with Interactive UI
 -- Theme: Blue Accent / Dark Mode
 
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Clean up any existing Blue Hub UI instances
+-- Clean up any pre-existing UI instance
 if LocalPlayer.PlayerGui:FindFirstChild("BlueHubGUI") then
     LocalPlayer.PlayerGui.BlueHubGUI:Destroy()
 end
 
--- UI Library Setup (Blue Hub Theme)
+-- Global States
+_G.AutoFarm = false
+_G.AutoMaterial = false
+_G.SelectMaterial = "Angel Wings"
+_G.SelectMonster = nil
+
+-- UI Setup (Blue Hub Styling)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "BlueHubGUI"
 ScreenGui.Parent = LocalPlayer.PlayerGui
@@ -24,8 +28,8 @@ MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 35)
 MainFrame.BorderColor3 = Color3.fromRGB(0, 120, 255)
 MainFrame.BorderSizePixel = 2
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
-MainFrame.Size = UDim2.new(0, 450, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 400, 0, 350)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -39,6 +43,60 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = "Blue Hub | Blox Fruits (by bluescriptz)"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextSize = 14
+
+local Container = Instance.new("ScrollingFrame")
+Container.Name = "Container"
+Container.Parent = MainFrame
+Container.BackgroundTransparency = 1
+Container.Position = UDim2.new(0, 10, 0, 45)
+Container.Size = UDim2.new(1, -20, 1, -55)
+Container.CanvasSize = UDim2.new(0, 0, 0, 260)
+Container.ScrollBarThickness = 6
+Container.ScrollBarImageColor3 = Color3.fromRGB(0, 120, 255)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = Container
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+
+-- Helper Function: Create Toggle Buttons
+local function CreateToggle(name, defaultState, callback)
+    local Button = Instance.new("TextButton")
+    Button.Parent = Container
+    Button.Size = UDim2.new(1, 0, 0, 40)
+    Button.BackgroundColor3 = defaultState and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(25, 35, 55)
+    Button.BorderColor3 = Color3.fromRGB(0, 100, 200)
+    Button.BorderSizePixel = 1
+    Button.Font = Enum.Font.GothamSemibold
+    Button.Text = name .. " : " .. (defaultState and "ON" or "OFF")
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextSize = 13
+
+    local state = defaultState
+    Button.MouseButton1Click:Connect(function()
+        state = not state
+        Button.BackgroundColor3 = state and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(25, 35, 55)
+        Button.Text = name .. " : " .. (state and "ON" or "OFF")
+        callback(state)
+    end)
+end
+
+-- Add Interactive Feature Toggles to UI
+CreateToggle("Auto Farm Level", _G.AutoFarm, function(enabled)
+    _G.AutoFarm = enabled
+end)
+
+CreateToggle("Auto Farm Material", _G.AutoMaterial, function(enabled)
+    _G.AutoMaterial = enabled
+end)
+
+CreateToggle("Fast Attack", false, function(enabled)
+    _G.FastAttack = enabled
+end)
+
+CreateToggle("Auto Accept Quest", true, function(enabled)
+    _G.AutoQuest = enabled
+end)
 
 -- Bypass / Hooks
 pcall(function()
@@ -440,3 +498,19 @@ function CheckQuest()
         end
     end
 end
+
+-- Background Automation Loop Thread
+task.spawn(function()
+    while task.wait(1) do
+        if _G.AutoFarm then
+            pcall(function()
+                CheckQuest()
+            end)
+        end
+        if _G.AutoMaterial then
+            pcall(function()
+                MaterialMon()
+            end)
+        end
+    end
+end)
