@@ -1,18 +1,18 @@
 --[[
     redz Hub v3 — Full Standalone Untruncated Edition (Blox Fruits)
-    Features: Complete Level Auto Farm, Live Enemy Tracking, Quest Engine, 
-              Fast Attack, Bring Mobs, Auto Stats, Teleports, & Modern Redz UI.
+    Features: Complete Level Auto Farm, Live Enemy Tracking, Full Quest Engine, 
+              Auto Attack/Click, Bring Mobs, Auto Stats, Teleports, & Modern Redz UI.
 --]]
 
 --// Services
-local Players           = game:GetService("Players")
-local RunService        = game:GetService("RunService")
+local Players         = game:GetService("Players")
+local RunService      = game:GetService("RunService")
 local UserInputService  = game:GetService("UserInputService")
-local TweenService      = game:GetService("TweenService")
-local CoreGui           = game:GetService("CoreGui")
+local TweenService    = game:GetService("TweenService")
+local CoreGui         = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser       = game:GetService("VirtualUser")
-local TeleportService   = game:GetService("TeleportService")
+local VirtualUser     = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -155,7 +155,7 @@ local function checkHaki()
     end
 end
 
--- Smooth Movement Engine (Heartbeat Step Lerp)
+-- Smooth Movement Engine
 local function moveToPos(targetPos)
     local hrp = getHRP()
     if not hrp then return end
@@ -176,7 +176,7 @@ local function moveToPos(targetPos)
     end
 end
 
--- Ultra Fast Attack Thread
+-- Ultra Fast Click & Attack Loop
 task.spawn(function()
     while true do
         task.wait(0.01)
@@ -186,6 +186,9 @@ task.spawn(function()
                 local tool = char and char:FindFirstChildOfClass("Tool")
                 if tool then
                     tool:Activate()
+                    VirtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+                    VirtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+                    
                     local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
                     if net and net:FindFirstChild("RE/RegisterAttack") then
                         net["RE/RegisterAttack"]:FireServer()
@@ -218,7 +221,7 @@ local function bringNearestMobs(primaryEnemy)
     end
 end
 
--- Quest Engine
+-- Quest Engine Checks
 local function hasQuest()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
     local mainGui = gui and gui:FindFirstChild("Main")
@@ -233,7 +236,7 @@ local function acceptQuest(targetData)
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", targetData.Quest, targetData.QuestLvl)
     end)
-    task.wait(0.2)
+    task.wait(0.3)
 end
 
 -- Find Active Target Mobs
@@ -273,7 +276,7 @@ local function executeAttack(targetModel)
     while not State.StopFlag and State.AutoFarmON do
         if not enemyHum or enemyHum.Health <= 0 or not enemyHrp.Parent then break end
 
-        -- Freeze/Hover directly above target mob in real-time
+        -- Hover directly above target mob
         local hoverPos = enemyHrp.Position + Vector3.new(0, Config.HoverHeight, 0)
         hrp.CFrame = CFrame.new(hoverPos, enemyHrp.Position)
 
@@ -316,23 +319,25 @@ local function autoFarmLoop()
         State.Level = getLevel()
         local targetInfo = getTargetData(State.Level)
 
-        -- Accept Quest
+        -- Check/Accept Quest
         if State.AutoQuestON and not hasQuest() then
-            State.CurrentTask = "Quest: " .. targetInfo.Quest
+            State.CurrentTask = "Accepting Quest: " .. targetInfo.Quest
             acceptQuest(targetInfo)
         end
 
-        -- Find & Attack Target
-        State.CurrentTask = "Hunting: " .. targetInfo.Mob
-        local enemy = findNearestTarget(targetInfo.Mob)
+        -- Keep farming until the full quest is complete
+        while not State.StopFlag and State.AutoFarmON and (hasQuest() or not State.AutoQuestON) do
+            State.CurrentTask = "Hunting: " .. targetInfo.Mob
+            local enemy = findNearestTarget(targetInfo.Mob)
 
-        if enemy and enemy:FindFirstChild("HumanoidRootPart") then
-            State.CurrentTask = "Attacking " .. enemy.Name
-            executeAttack(enemy)
-        else
-            State.CurrentTask = "Searching " .. targetInfo.Mob
-            moveToPos(targetInfo.NPCPos + Vector3.new(0, 25, 0))
-            task.wait(0.5)
+            if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+                State.CurrentTask = "Attacking " .. enemy.Name
+                executeAttack(enemy)
+            else
+                State.CurrentTask = "Searching " .. targetInfo.Mob
+                moveToPos(targetInfo.NPCPos + Vector3.new(0, 25, 0))
+                task.wait(0.5)
+            end
         end
     end
 
