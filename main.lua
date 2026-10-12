@@ -1,18 +1,18 @@
 --[[
-    redz Hub v3 — main.lua (Blox Fruits - Complete & Standalone Edition)
-    Features: Full Auto Farm, Quest System, Air Hover, Fast Attack, Bring Mobs, Auto Stats, Teleports, & Fruit Store
+    redz Hub v3 — Full Standalone Untruncated Edition (Blox Fruits)
+    Features: Complete Level Auto Farm, Live Enemy Tracking, Quest Engine, 
+              Fast Attack, Bring Mobs, Auto Stats, Teleports, & Modern Redz UI.
 --]]
 
 --// Services
-local Players         = game:GetService("Players")
-local RunService      = game:GetService("RunService")
-local UserInputService= game:GetService("UserInputService")
-local TweenService    = game:GetService("TweenService")
-local CoreGui         = game:GetService("CoreGui")
-local HttpService     = game:GetService("HttpService")
+local Players           = game:GetService("Players")
+local RunService        = game:GetService("RunService")
+local UserInputService  = game:GetService("UserInputService")
+local TweenService      = game:GetService("TweenService")
+local CoreGui           = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser     = game:GetService("VirtualUser")
-local TeleportService = game:GetService("TeleportService")
+local VirtualUser       = game:GetService("VirtualUser")
+local TeleportService   = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -20,20 +20,20 @@ local LocalPlayer = Players.LocalPlayer
 --// BUILT-IN FARM & QUEST DATA
 --// ═══════════════════════════════════════════
 local LevelData = {
-    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",   QuestLvl = 1, NPCPos = Vector3.new(1059, 16, 1549) },
-    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",    QuestLvl = 1, NPCPos = Vector3.new(-1600, 37, 153) },
-    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",    QuestLvl = 1, NPCPos = Vector3.new(-1140, 4, 3828) },
-    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",    QuestLvl = 1, NPCPos = Vector3.new(894, 6, 4384) },
-    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",      QuestLvl = 1, NPCPos = Vector3.new(1385, 87, -1298) },
+    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",    QuestLvl = 1, NPCPos = Vector3.new(1059, 16, 1549) },
+    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",     QuestLvl = 1, NPCPos = Vector3.new(-1600, 37, 153) },
+    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",     QuestLvl = 1, NPCPos = Vector3.new(-1140, 4, 3828) },
+    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",     QuestLvl = 1, NPCPos = Vector3.new(894, 6, 4384) },
+    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",       QuestLvl = 1, NPCPos = Vector3.new(1385, 87, -1298) },
     { MinLvl = 120, MaxLvl = 149, Mob = "Chief Petty Officer", Quest = "MarineQuest2",    QuestLvl = 1, NPCPos = Vector3.new(-5035, 20, 4323) },
-    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",          Quest = "SkyQuest",       QuestLvl = 1, NPCPos = Vector3.new(-4840, 718, -2620) },
-    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",             Quest = "PrisonerQuest",  QuestLvl = 1, NPCPos = Vector3.new(530, 2, 482) },
+    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",          Quest = "SkyQuest",        QuestLvl = 1, NPCPos = Vector3.new(-4840, 718, -2620) },
+    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",            Quest = "PrisonerQuest",   QuestLvl = 1, NPCPos = Vector3.new(530, 2, 482) },
     { MinLvl = 250, MaxLvl = 299, Mob = "Toga Warrior",         Quest = "ColosseumQuest", QuestLvl = 1, NPCPos = Vector3.new(-1580, 7, -2980) },
-    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",     QuestLvl = 1, NPCPos = Vector3.new(-5315, 12, 8515) },
-    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",   QuestLvl = 1, NPCPos = Vector3.new(61122, 18, 1569) },
-    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",   QuestLvl = 1, NPCPos = Vector3.new(-4720, 845, -1950) },
-    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",   QuestLvl = 1, NPCPos = Vector3.new(-7860, 5545, -380) },
-    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest",  QuestLvl = 1, NPCPos = Vector3.new(5258, 39, 4050) },
+    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",      QuestLvl = 1, NPCPos = Vector3.new(-5315, 12, 8515) },
+    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",    QuestLvl = 1, NPCPos = Vector3.new(61122, 18, 1569) },
+    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",    QuestLvl = 1, NPCPos = Vector3.new(-4720, 845, -1950) },
+    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",    QuestLvl = 1, NPCPos = Vector3.new(-7860, 5545, -380) },
+    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest",   QuestLvl = 1, NPCPos = Vector3.new(5258, 39, 4050) },
 }
 
 local function getTargetData(level)
@@ -49,11 +49,11 @@ end
 --// CONFIGURATION
 --// ═══════════════════════════════════════════
 local Config = {
-    FlightSpeed     = 250,
-    HoverHeight     = 10,
-    BringMobDistance= 40,
-    SelectedWeapon  = "Melee", -- "Melee", "Blox Fruit", "Sword", "Gun"
-    
+    FlightSpeed      = 300,
+    HoverHeight      = 10,
+    BringMobDistance = 50,
+    SelectedWeapon   = "Melee", -- "Melee", "Blox Fruit", "Sword", "Gun"
+
     -- Auto Stats
     AutoStatMelee   = false,
     AutoStatDefense = false,
@@ -62,37 +62,36 @@ local Config = {
 
     -- UI Colors Theme
     Colors = {
-        Background   = Color3.fromRGB(12, 12, 14),
-        Sidebar      = Color3.fromRGB(18, 18, 22),
-        Element      = Color3.fromRGB(28, 28, 34),
-        ElementHover = Color3.fromRGB(40, 40, 50),
-        Accent       = Color3.fromRGB(235, 35, 50),
-        AccentDark   = Color3.fromRGB(170, 20, 35),
-        Text         = Color3.fromRGB(245, 245, 245),
-        TextDim      = Color3.fromRGB(140, 140, 150),
-        Border       = Color3.fromRGB(40, 40, 48),
-        ToggleOff    = Color3.fromRGB(45, 45, 52),
-        ToggleOn     = Color3.fromRGB(235, 35, 50),
+        Background   = Color3.fromRGB(15, 15, 20),
+        Sidebar      = Color3.fromRGB(22, 22, 28),
+        Element      = Color3.fromRGB(30, 31, 40),
+        ElementHover = Color3.fromRGB(42, 44, 58),
+        Accent       = Color3.fromRGB(255, 60, 80),
+        AccentDark   = Color3.fromRGB(180, 30, 50),
+        Text         = Color3.fromRGB(255, 255, 255),
+        TextDim      = Color3.fromRGB(150, 155, 170),
+        Border       = Color3.fromRGB(50, 52, 68),
+        ToggleOff    = Color3.fromRGB(45, 48, 62),
+        ToggleOn     = Color3.fromRGB(255, 60, 80),
     },
-    Font       = Enum.Font.Gotham,
-    FontMedium = Enum.Font.GothamMedium,
-    FontBold   = Enum.Font.GothamBold,
+    Font     = Enum.Font.GothamMedium,
+    FontBold = Enum.Font.GothamBold,
 }
 
 --// ═══════════════════════════════════════════
 --// STATE MANAGEMENT
 --// ═══════════════════════════════════════════
 local State = {
-    AutoFarmON    = false,
-    AutoQuestON   = true,
-    FastAttackON  = true,
-    BringMobsON   = true,
-    AutoHakiON    = true,
-    Running       = false,
-    StopFlag      = false,
-    CurrentTask   = "Idle",
-    KilledCount   = 0,
-    Level         = 1,
+    AutoFarmON   = false,
+    AutoQuestON  = true,
+    FastAttackON = true,
+    BringMobsON  = true,
+    AutoHakiON   = true,
+    Running      = false,
+    StopFlag     = false,
+    CurrentTask  = "Idle",
+    KilledCount  = 0,
+    Level        = 1,
 }
 
 --// ═══════════════════════════════════════════
@@ -128,17 +127,18 @@ local function equipWeapon()
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     if not char or not backpack then return end
 
-    local currentTool = char:FindFirstChildOfClass("Tool")
-    if currentTool then return end
-
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            if (Config.SelectedWeapon == "Melee" and tool.ToolTip == "Melee") or
-               (Config.SelectedWeapon == "Blox Fruit" and (tool.ToolTip == "Blox Fruit" or tool.ToolTip == "Devil Fruit")) or
-               (Config.SelectedWeapon == "Sword" and tool.ToolTip == "Sword") or
-               (Config.SelectedWeapon == "Gun" and tool.ToolTip == "Gun") then
-                getHumanoid():EquipTool(tool)
-                break
+    if not char:FindFirstChildOfClass("Tool") then
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                local toolTip = tool.ToolTip or ""
+                if (Config.SelectedWeapon == "Melee" and (toolTip == "Melee" or tool:FindFirstChild("Melee"))) or
+                   (Config.SelectedWeapon == "Blox Fruit" and (toolTip == "Blox Fruit" or toolTip == "Devil Fruit")) or
+                   (Config.SelectedWeapon == "Sword" and toolTip == "Sword") or
+                   (Config.SelectedWeapon == "Gun" and toolTip == "Gun") then
+                    local hum = getHumanoid()
+                    if hum then hum:EquipTool(tool) end
+                    break
+                end
             end
         end
     end
@@ -155,30 +155,24 @@ local function checkHaki()
     end
 end
 
--- Fast Movement Engine
-local function flyTo(targetPos)
+-- Smooth Movement Engine (Heartbeat Step Lerp)
+local function moveToPos(targetPos)
     local hrp = getHRP()
-    if not hrp or not targetPos then return end
+    if not hrp then return end
 
-    local dist = (hrp.Position - targetPos).Magnitude
-    if dist < 15 then 
-        hrp.CFrame = CFrame.new(targetPos)
-        return 
-    end
+    while State.AutoFarmON and not State.StopFlag do
+        hrp = getHRP()
+        if not hrp then break end
 
-    local duration = dist / Config.FlightSpeed
-    local tween = TweenService:Create(
-        hrp,
-        TweenInfo.new(duration, Enum.EasingStyle.Linear),
-        { CFrame = CFrame.new(targetPos) }
-    )
-    tween:Play()
-    
-    local elapsed = 0
-    while tween.PlaybackState == Enum.PlaybackState.Playing and not State.StopFlag do
-        task.wait(0.05)
-        elapsed = elapsed + 0.05
-        if elapsed > duration + 1 then tween:Cancel(); break end
+        local dist = (hrp.Position - targetPos).Magnitude
+        if dist <= 8 then
+            hrp.CFrame = CFrame.new(targetPos)
+            break
+        end
+
+        local step = math.min(dist, Config.FlightSpeed * RunService.Heartbeat:Wait())
+        local dir = (targetPos - hrp.Position).Unit
+        hrp.CFrame = CFrame.new(hrp.Position + dir * step)
     end
 end
 
@@ -193,8 +187,8 @@ task.spawn(function()
                 if tool then
                     tool:Activate()
                     local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                    if net then
-                        net:FindFirstChild("RE/RegisterAttack"):FireServer()
+                    if net and net:FindFirstChild("RE/RegisterAttack") then
+                        net["RE/RegisterAttack"]:FireServer()
                     end
                 end
             end)
@@ -234,12 +228,12 @@ end
 
 local function acceptQuest(targetData)
     if hasQuest() then return end
-    flyTo(targetData.NPCPos)
-    task.wait(0.3)
+    moveToPos(targetData.NPCPos)
+    task.wait(0.2)
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", targetData.Quest, targetData.QuestLvl)
     end)
-    task.wait(0.3)
+    task.wait(0.2)
 end
 
 -- Find Active Target Mobs
@@ -262,7 +256,7 @@ local function findNearestTarget(mobName)
     return closest
 end
 
--- Air Farm Execution
+-- Real-Time Dynamic Attack Hover Lock
 local function executeAttack(targetModel)
     local enemyHrp = targetModel:FindFirstChild("HumanoidRootPart")
     local enemyHum = targetModel:FindFirstChildOfClass("Humanoid")
@@ -270,22 +264,16 @@ local function executeAttack(targetModel)
 
     if not enemyHrp or not enemyHum or not hrp then return end
 
-    -- Hover Stabilization Mechanics
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
     bv.Velocity = Vector3.zero
     bv.Parent = hrp
 
-    local bg = Instance.new("BodyGyro")
-    bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-    bg.CFrame = hrp.CFrame
-    bg.Parent = hrp
-
     local startTime = tick()
     while not State.StopFlag and State.AutoFarmON do
         if not enemyHum or enemyHum.Health <= 0 or not enemyHrp.Parent then break end
 
-        -- Freeze/Float Character directly above target mob
+        -- Freeze/Hover directly above target mob in real-time
         local hoverPos = enemyHrp.Position + Vector3.new(0, Config.HoverHeight, 0)
         hrp.CFrame = CFrame.new(hoverPos, enemyHrp.Position)
 
@@ -293,12 +281,11 @@ local function executeAttack(targetModel)
         checkHaki()
         bringNearestMobs(targetModel)
 
-        task.wait(0.05)
-        if tick() - startTime > 15 then break end
+        RunService.Heartbeat:Wait()
+        if tick() - startTime > 20 then break end
     end
 
     bv:Destroy()
-    bg:Destroy()
     if enemyHum and enemyHum.Health <= 0 then
         State.KilledCount = State.KilledCount + 1
     end
@@ -330,12 +317,12 @@ local function autoFarmLoop()
         local targetInfo = getTargetData(State.Level)
 
         -- Accept Quest
-        if State.AutoQuestON then
+        if State.AutoQuestON and not hasQuest() then
             State.CurrentTask = "Quest: " .. targetInfo.Quest
             acceptQuest(targetInfo)
         end
 
-        -- Find Target
+        -- Find & Attack Target
         State.CurrentTask = "Hunting: " .. targetInfo.Mob
         local enemy = findNearestTarget(targetInfo.Mob)
 
@@ -343,9 +330,9 @@ local function autoFarmLoop()
             State.CurrentTask = "Attacking " .. enemy.Name
             executeAttack(enemy)
         else
-            State.CurrentTask = "Waiting for " .. targetInfo.Mob .. " Spawns..."
-            flyTo(targetInfo.NPCPos + Vector3.new(0, 20, 0))
-            task.wait(1)
+            State.CurrentTask = "Searching " .. targetInfo.Mob
+            moveToPos(targetInfo.NPCPos + Vector3.new(0, 25, 0))
+            task.wait(0.5)
         end
     end
 
@@ -374,7 +361,7 @@ local function stroke(parent, color, thickness, transparency)
     return create("UIStroke", {
         Color = color or Config.Colors.Border,
         Thickness = thickness or 1,
-        Transparency = transparency or 0.5,
+        Transparency = transparency or 0.4,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
         Parent = parent,
     })
@@ -400,24 +387,24 @@ local ScreenGui = create("ScreenGui", {
 
 local Main = create("Frame", {
     Name = "Main", Parent = ScreenGui, BackgroundColor3 = Config.Colors.Background,
-    BackgroundTransparency = 0.05, BorderSizePixel = 0, Size = UDim2.new(0, 640, 0, 430),
+    BorderSizePixel = 0, Size = UDim2.new(0, 640, 0, 430),
     Position = UDim2.new(0.5, -320, 0.5, -215), Active = true, Draggable = true,
 })
 corner(Main, 10)
-stroke(Main, Config.Colors.Border, 1, 0.3)
+stroke(Main, Config.Colors.Accent, 1.5, 0.2)
 
 -- Topbar
 local TopBar = create("Frame", { Name = "TopBar", Parent = Main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42) })
 
 create("TextLabel", {
     Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 6),
-    Size = UDim2.new(0, 200, 0, 18), Font = Config.FontBold, Text = "redz Hub v3 — Blox Fruits",
+    Size = UDim2.new(0, 220, 0, 18), Font = Config.FontBold, Text = "redz Hub v3 — Blox Fruits",
     TextColor3 = Config.Colors.Accent, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
 })
 
 create("TextLabel", {
     Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 24),
-    Size = UDim2.new(0, 200, 0, 12), Font = Config.Font, Text = "Standalone OP Edition | v3.0 (Fixed)",
+    Size = UDim2.new(0, 220, 0, 12), Font = Config.Font, Text = "Complete Fixed Edition | v3.0",
     TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
 })
 
@@ -489,7 +476,7 @@ end
 for _, catName in ipairs(CATEGORIES) do
     local btn = create("TextButton", {
         Parent = SideScroll, BackgroundColor3 = Config.Colors.Element, BackgroundTransparency = 1,
-        BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 28), Font = Config.FontMedium,
+        BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 28), Font = Config.FontBold,
         Text = "  " .. catName, TextColor3 = Config.Colors.TextDim, TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, Name = catName,
     })
@@ -510,7 +497,7 @@ for _, catName in ipairs(CATEGORIES) do
             other.Indicator.Visible = false
         end
         btn.BackgroundTransparency = 0.4
-        btn.TextColor3 = Config.Colors.Text
+        btn.TextColor3 = Config.Colors.Accent
         indicator.Visible = true
         switchPage(catName)
     end)
@@ -547,7 +534,7 @@ local function addToggle(page, name, default, callback)
 
     create("TextLabel", {
         Parent = btn, BackgroundTransparency = 1, Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -50, 1, 0), Font = Config.FontMedium, Text = name,
+        Size = UDim2.new(1, -50, 1, 0), Font = Config.Font, Text = name,
         TextColor3 = Config.Colors.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
     })
 
@@ -588,7 +575,7 @@ local function addSlider(page, name, minV, maxV, default, callback)
 
     create("TextLabel", {
         Parent = container, BackgroundTransparency = 1, Position = UDim2.new(0, 10, 0, 2),
-        Size = UDim2.new(0.7, 0, 0, 14), Font = Config.FontMedium, Text = name,
+        Size = UDim2.new(0.7, 0, 0, 14), Font = Config.Font, Text = name,
         TextColor3 = Config.Colors.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
     })
 
@@ -639,13 +626,14 @@ end
 
 local function addButton(page, name, callback)
     local btn = create("TextButton", {
-        Parent = page, BackgroundColor3 = Config.Colors.Accent, BorderSizePixel = 0,
+        Parent = page, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 28), Font = Config.FontBold, Text = name,
         TextColor3 = Config.Colors.Text, TextSize = 11, AutoButtonColor = false,
     })
     corner(btn, 6)
-    btn.MouseEnter:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.AccentDark }) end)
-    btn.MouseLeave:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.Accent }) end)
+    stroke(btn, Config.Colors.Border, 1, 0.6)
+    btn.MouseEnter:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.ElementHover }) end)
+    btn.MouseLeave:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.Element }) end)
     btn.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
     return btn
 end
@@ -707,9 +695,9 @@ do
     addToggle(page, "Auto Armament Haki", true, function(v) State.AutoHakiON = v end)
 
     addSection(page, "TWEAKS & SLIDERS")
-    addSlider(page, "Flight Speed", 100, 350, 250, function(v) Config.FlightSpeed = v end)
+    addSlider(page, "Flight Speed", 100, 400, 300, function(v) Config.FlightSpeed = v end)
     addSlider(page, "Hover Altitude", 5, 25, 10, function(v) Config.HoverHeight = v end)
-    addSlider(page, "Bring Radius", 10, 100, 40, function(v) Config.BringMobDistance = v end)
+    addSlider(page, "Bring Radius", 10, 100, 50, function(v) Config.BringMobDistance = v end)
 end
 
 -- Auto Stats
@@ -770,7 +758,7 @@ end
 -- Default active tab
 if buttons[1] then
     buttons[1].BackgroundTransparency = 0.4
-    buttons[1].TextColor3 = Config.Colors.Text
+    buttons[1].TextColor3 = Config.Colors.Accent
     buttons[1].Indicator.Visible = true
     selected = "Main Farming"
     switchPage("Main Farming")
@@ -780,7 +768,7 @@ end
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "redz Hub v3",
-        Text = "Loaded full standalone script successfully!",
+        Text = "Loaded full script successfully!",
         Duration = 5,
     })
 end)
