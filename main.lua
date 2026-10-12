@@ -2,7 +2,7 @@
 -- [[ Features: Auto Farm 0-2800, Fruit, Raid, Boss, Stats ]] --
 -- [[ Made by Blue Scripts ]] --
 
-local RedzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/REDZHUB/RedzLibV2/main/Source.lua"))()
+local RedzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/stripesdscoddf/blue-hub/refs/heads/main/main.lua"))()
 local Window = RedzLib:MakeWindow({
     Title = "BLUE HUB 💙",
     SubTitle = "Blox Fruits | Made by Blue Scripts",
