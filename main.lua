@@ -1,7 +1,10 @@
 --[[
-    redz Hub v3 — Full Standalone Untruncated Edition (Blox Fruits)
-    Features: Complete Level Auto Farm, Live Enemy Tracking, Full Quest Engine, 
-              Auto Attack/Click, Bring Mobs, Auto Stats, Teleports, & Modern Redz UI.
+    redz Hub v3 — Fixed & Standalone Edition (Blox Fruits)
+    Features:
+    - Auto Farm Level & Quest Loop with quest completion validation.
+    - Continuous auto-clicking/attacking while hovering or idle.
+    - Enemy hover locking and mob bringing engine.
+    - Auto Stats distributor, Teleports, Fruit Purchasing, and Redz UI.
 --]]
 
 --// Services
@@ -52,15 +55,13 @@ local Config = {
     FlightSpeed      = 300,
     HoverHeight      = 10,
     BringMobDistance = 50,
-    SelectedWeapon   = "Melee", -- "Melee", "Blox Fruit", "Sword", "Gun"
+    SelectedWeapon   = "Melee",
 
-    -- Auto Stats
     AutoStatMelee   = false,
     AutoStatDefense = false,
     AutoStatSword   = false,
     AutoStatFruit   = false,
 
-    -- UI Colors Theme
     Colors = {
         Background   = Color3.fromRGB(15, 15, 20),
         Sidebar      = Color3.fromRGB(22, 22, 28),
@@ -114,14 +115,12 @@ local function getLevel()
     return lvl and lvl.Value or 1
 end
 
--- Anti-AFK Handler
 LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
     task.wait(1)
     VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- Auto Equip Weapon
 local function equipWeapon()
     local char = LocalPlayer.Character
     local backpack = LocalPlayer:FindFirstChild("Backpack")
@@ -144,7 +143,6 @@ local function equipWeapon()
     end
 end
 
--- Auto Haki Activation
 local function checkHaki()
     if not State.AutoHakiON then return end
     local char = LocalPlayer.Character
@@ -155,7 +153,6 @@ local function checkHaki()
     end
 end
 
--- Smooth Movement Engine
 local function moveToPos(targetPos)
     local hrp = getHRP()
     if not hrp then return end
@@ -176,30 +173,33 @@ local function moveToPos(targetPos)
     end
 end
 
--- Ultra Fast Click & Attack Loop
+local function performAttack()
+    if not State.AutoFarmON or not State.FastAttackON then return end
+    pcall(function()
+        local char = LocalPlayer.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if tool then
+            tool:Activate()
+            VirtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            VirtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            
+            local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+            if net and net:FindFirstChild("RE/RegisterAttack") then
+                net["RE/RegisterAttack"]:FireServer()
+            end
+        end
+    end)
+end
+
 task.spawn(function()
     while true do
         task.wait(0.01)
         if State.AutoFarmON and State.FastAttackON then
-            pcall(function()
-                local char = LocalPlayer.Character
-                local tool = char and char:FindFirstChildOfClass("Tool")
-                if tool then
-                    tool:Activate()
-                    VirtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-                    VirtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-                    
-                    local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                    if net and net:FindFirstChild("RE/RegisterAttack") then
-                        net["RE/RegisterAttack"]:FireServer()
-                    end
-                end
-            end)
+            performAttack()
         end
     end
 end)
 
--- Bring Mobs Engine
 local function bringNearestMobs(primaryEnemy)
     if not State.BringMobsON or not primaryEnemy then return end
     local primaryHrp = primaryEnemy:FindFirstChild("HumanoidRootPart")
@@ -221,25 +221,31 @@ local function bringNearestMobs(primaryEnemy)
     end
 end
 
--- Quest Engine Checks
 local function hasQuest()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
     local mainGui = gui and gui:FindFirstChild("Main")
     local questFrame = mainGui and mainGui:FindFirstChild("Quest")
-    return questFrame and questFrame.Visible
+    if questFrame and questFrame.Visible then
+        local container = questFrame:FindFirstChild("Container") or questFrame
+        local questTitle = container:FindFirstChild("QuestTitle") or container:FindFirstChild("Title")
+        if questTitle and questTitle:IsA("TextLabel") and questTitle.Text ~= "" then
+            return true
+        end
+        return true
+    end
+    return false
 end
 
 local function acceptQuest(targetData)
     if hasQuest() then return end
     moveToPos(targetData.NPCPos)
-    task.wait(0.2)
+    task.wait(0.3)
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", targetData.Quest, targetData.QuestLvl)
     end)
-    task.wait(0.3)
+    task.wait(0.5)
 end
 
--- Find Active Target Mobs
 local function findNearestTarget(mobName)
     local hrp = getHRP()
     if not hrp then return nil end
@@ -259,7 +265,6 @@ local function findNearestTarget(mobName)
     return closest
 end
 
--- Real-Time Dynamic Attack Hover Lock
 local function executeAttack(targetModel)
     local enemyHrp = targetModel:FindFirstChild("HumanoidRootPart")
     local enemyHum = targetModel:FindFirstChildOfClass("Humanoid")
@@ -276,16 +281,16 @@ local function executeAttack(targetModel)
     while not State.StopFlag and State.AutoFarmON do
         if not enemyHum or enemyHum.Health <= 0 or not enemyHrp.Parent then break end
 
-        -- Hover directly above target mob
         local hoverPos = enemyHrp.Position + Vector3.new(0, Config.HoverHeight, 0)
         hrp.CFrame = CFrame.new(hoverPos, enemyHrp.Position)
 
         equipWeapon()
         checkHaki()
+        performAttack()
         bringNearestMobs(targetModel)
 
         RunService.Heartbeat:Wait()
-        if tick() - startTime > 20 then break end
+        if tick() - startTime > 25 then break end
     end
 
     bv:Destroy()
@@ -294,7 +299,6 @@ local function executeAttack(targetModel)
     end
 end
 
--- Auto Stat Distributor Thread
 task.spawn(function()
     while task.wait(1) do
         if Config.AutoStatMelee then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Melee", 1) end
@@ -319,14 +323,16 @@ local function autoFarmLoop()
         State.Level = getLevel()
         local targetInfo = getTargetData(State.Level)
 
-        -- Check/Accept Quest
         if State.AutoQuestON and not hasQuest() then
             State.CurrentTask = "Accepting Quest: " .. targetInfo.Quest
             acceptQuest(targetInfo)
         end
 
-        -- Keep farming until the full quest is complete
-        while not State.StopFlag and State.AutoFarmON and (hasQuest() or not State.AutoQuestON) do
+        while not State.StopFlag and State.AutoFarmON do
+            if State.AutoQuestON and not hasQuest() then
+                break
+            end
+
             State.CurrentTask = "Hunting: " .. targetInfo.Mob
             local enemy = findNearestTarget(targetInfo.Mob)
 
@@ -378,7 +384,6 @@ local function tween(obj, time, props)
     return t
 end
 
--- Root ScreenGui Setup
 local parentGui = pcall(function() return CoreGui end) and CoreGui or LocalPlayer:WaitForChild("PlayerGui")
 if parentGui:FindFirstChild("redzHubv3") then parentGui.redzHubv3:Destroy() end
 
@@ -398,7 +403,6 @@ local Main = create("Frame", {
 corner(Main, 10)
 stroke(Main, Config.Colors.Accent, 1.5, 0.2)
 
--- Topbar
 local TopBar = create("Frame", { Name = "TopBar", Parent = Main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42) })
 
 create("TextLabel", {
@@ -413,7 +417,6 @@ create("TextLabel", {
     TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
 })
 
--- Controls
 local btnContainer = create("Frame", { Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(1, -76, 0, 10), Size = UDim2.new(0, 66, 0, 22) })
 
 local function makeWinBtn(text, xPos, hoverColor, callback)
@@ -445,7 +448,6 @@ makeWinBtn("✕", 24, Color3.fromRGB(200, 35, 45), function()
     State.StopFlag = true
 end)
 
--- Sidebar
 local Sidebar = create("Frame", {
     Parent = Main, BackgroundColor3 = Config.Colors.Sidebar, BackgroundTransparency = 0.1,
     BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, 42), Size = UDim2.new(0, 150, 1, -42),
@@ -462,7 +464,6 @@ local Content = create("Frame", {
     Parent = Main, BackgroundTransparency = 1, Position = UDim2.new(0, 150, 0, 42), Size = UDim2.new(1, -150, 1, -42),
 })
 
--- UI Categories
 local CATEGORIES = {
     "Main Farming", "Combat & OP Mods", "Auto Stats", 
     "Teleports & Seas", "Fruit & Raids", "Settings & Info"
@@ -519,7 +520,6 @@ for _, catName in ipairs(CATEGORIES) do
     Pages[catName] = page
 end
 
--- UI Controls Helpers
 local function addSection(page, text)
     return create("TextLabel", {
         Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 18),
@@ -654,11 +654,7 @@ local function addInfo(page, name)
     return lbl
 end
 
---// ═══════════════════════════════════════════
 --// TAB CONTENTS BINDING
---// ═══════════════════════════════════════════
-
--- Main Farming
 do
     local page = Pages["Main Farming"]
     addSection(page, "AUTO FARM CONTROLS")
@@ -691,7 +687,6 @@ do
     end)
 end
 
--- Combat & OP Mods
 do
     local page = Pages["Combat & OP Mods"]
     addSection(page, "COMBAT MODIFICATIONS")
@@ -705,7 +700,6 @@ do
     addSlider(page, "Bring Radius", 10, 100, 50, function(v) Config.BringMobDistance = v end)
 end
 
--- Auto Stats
 do
     local page = Pages["Auto Stats"]
     addSection(page, "AUTOMATIC STAT DISTRIBUTOR")
@@ -715,7 +709,6 @@ do
     addToggle(page, "Auto Stat: Demon Fruit", false, function(v) Config.AutoStatFruit = v end)
 end
 
--- Teleports & Seas
 do
     local page = Pages["Teleports & Seas"]
     addSection(page, "SEA TELEPORTS")
@@ -730,7 +723,6 @@ do
     end)
 end
 
--- Fruit & Raids
 do
     local page = Pages["Fruit & Raids"]
     addSection(page, "FRUIT UTILITIES")
@@ -741,7 +733,6 @@ do
     end)
 end
 
--- Settings & Info
 do
     local page = Pages["Settings & Info"]
     addSection(page, "PLAYER & SERVER")
@@ -760,7 +751,6 @@ do
     end)
 end
 
--- Default active tab
 if buttons[1] then
     buttons[1].BackgroundTransparency = 0.4
     buttons[1].TextColor3 = Config.Colors.Accent
@@ -769,7 +759,6 @@ if buttons[1] then
     switchPage("Main Farming")
 end
 
--- Notification
 pcall(function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "redz Hub v3",
@@ -778,4 +767,4 @@ pcall(function()
     })
 end)
 
-print("[redz Hub v3] Full standalone script loaded successfully!")
+print("[redz Hub v3] Full script loaded successfully!")
