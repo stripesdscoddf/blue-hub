@@ -1,770 +1,588 @@
---[[
-    redz Hub v3 — Fixed & Standalone Edition (Blox Fruits)
-    Features:
-    - Auto Farm Level & Quest Loop with quest completion validation.
-    - Continuous auto-clicking/attacking while hovering or idle.
-    - Enemy hover locking and mob bringing engine.
-    - Auto Stats distributor, Teleports, Fruit Purchasing, and Redz UI.
---]]
+-- =============================================
+-- EIC HUB | BLOX FRUITS (v3.0 OP EDITION)
+-- UNIVERSAL MOBILE & DESKTOP EXECUTION
+-- =============================================
+local SCRIPT_VERSION = "3.0"
+local LOGO_ASSET_ID = "rbxassetid://73393542095412"
 
---// Services
-local Players         = game:GetService("Players")
-local RunService      = game:GetService("RunService")
-local UserInputService  = game:GetService("UserInputService")
-local TweenService    = game:GetService("TweenService")
-local CoreGui         = game:GetService("CoreGui")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualUser     = game:GetService("VirtualUser")
-local TeleportService = game:GetService("TeleportService")
-
-local LocalPlayer = Players.LocalPlayer
-
---// ═══════════════════════════════════════════
---// BUILT-IN FARM & QUEST DATA
---// ═══════════════════════════════════════════
-local LevelData = {
-    { MinLvl = 1,   MaxLvl = 14,  Mob = "Bandit",               Quest = "BanditQuest1",    QuestLvl = 1, NPCPos = Vector3.new(1059, 16, 1549) },
-    { MinLvl = 15,  MaxLvl = 29,  Mob = "Monkey",               Quest = "JungleQuest",     QuestLvl = 1, NPCPos = Vector3.new(-1600, 37, 153) },
-    { MinLvl = 30,  MaxLvl = 59,  Mob = "Pirate",               Quest = "PirateQuest",     QuestLvl = 1, NPCPos = Vector3.new(-1140, 4, 3828) },
-    { MinLvl = 60,  MaxLvl = 89,  Mob = "Desert Bandit",        Quest = "DesertQuest",     QuestLvl = 1, NPCPos = Vector3.new(894, 6, 4384) },
-    { MinLvl = 90,  MaxLvl = 119, Mob = "Snow Bandit",          Quest = "SnowQuest",       QuestLvl = 1, NPCPos = Vector3.new(1385, 87, -1298) },
-    { MinLvl = 120, MaxLvl = 149, Mob = "Chief Petty Officer", Quest = "MarineQuest2",    QuestLvl = 1, NPCPos = Vector3.new(-5035, 20, 4323) },
-    { MinLvl = 150, MaxLvl = 189, Mob = "Sky Bandit",          Quest = "SkyQuest",        QuestLvl = 1, NPCPos = Vector3.new(-4840, 718, -2620) },
-    { MinLvl = 190, MaxLvl = 249, Mob = "Prisoner",            Quest = "PrisonerQuest",   QuestLvl = 1, NPCPos = Vector3.new(530, 2, 482) },
-    { MinLvl = 250, MaxLvl = 299, Mob = "Toga Warrior",         Quest = "ColosseumQuest", QuestLvl = 1, NPCPos = Vector3.new(-1580, 7, -2980) },
-    { MinLvl = 300, MaxLvl = 374, Mob = "Military Soldier",     Quest = "MagmaQuest",      QuestLvl = 1, NPCPos = Vector3.new(-5315, 12, 8515) },
-    { MinLvl = 375, MaxLvl = 449, Mob = "Fishman Warrior",      Quest = "FishmanQuest",    QuestLvl = 1, NPCPos = Vector3.new(61122, 18, 1569) },
-    { MinLvl = 450, MaxLvl = 524, Mob = "God's Guard",          Quest = "SkyExp1Quest",    QuestLvl = 1, NPCPos = Vector3.new(-4720, 845, -1950) },
-    { MinLvl = 525, MaxLvl = 624, Mob = "Shandopian Warrior",   Quest = "SkyExp2Quest",    QuestLvl = 1, NPCPos = Vector3.new(-7860, 5545, -380) },
-    { MinLvl = 625, MaxLvl = 699, Mob = "Galley Pirate",        Quest = "FountainQuest",   QuestLvl = 1, NPCPos = Vector3.new(5258, 39, 4050) },
-}
-
-local function getTargetData(level)
-    for _, data in ipairs(LevelData) do
-        if level >= data.MinLvl and level <= data.MaxLvl then
-            return data
-        end
-    end
-    return LevelData[1]
+-- Prevent duplicated UI instances
+if game:GetService("CoreGui"):FindFirstChild("EicHubUI") then
+    game:GetService("CoreGui"):FindFirstChild("EicHubUI"):Destroy()
 end
 
---// ═══════════════════════════════════════════
---// CONFIGURATION
---// ═══════════════════════════════════════════
-local Config = {
-    FlightSpeed      = 300,
-    HoverHeight      = 10,
-    BringMobDistance = 50,
-    SelectedWeapon   = "Melee",
+-- ======================
+-- [SERVICES & INITIALIZATION]
+-- ======================
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local VU = game:GetService("VirtualUser")
+local UIS = game:GetService("UserInputService")
+local RunS = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local LogService = game:GetService("LogService")
 
-    AutoStatMelee   = false,
-    AutoStatDefense = false,
-    AutoStatSword   = false,
-    AutoStatFruit   = false,
+-- Anti-Log / Basic Detection Bypass
+pcall(function()
+    LogService.MessageOut:Connect(function() end)
+end)
 
-    Colors = {
-        Background   = Color3.fromRGB(15, 15, 20),
-        Sidebar      = Color3.fromRGB(22, 22, 28),
-        Element      = Color3.fromRGB(30, 31, 40),
-        ElementHover = Color3.fromRGB(42, 44, 58),
-        Accent       = Color3.fromRGB(255, 60, 80),
-        AccentDark   = Color3.fromRGB(180, 30, 50),
-        Text         = Color3.fromRGB(255, 255, 255),
-        TextDim      = Color3.fromRGB(150, 155, 170),
-        Border       = Color3.fromRGB(50, 52, 68),
-        ToggleOff    = Color3.fromRGB(45, 48, 62),
-        ToggleOn     = Color3.fromRGB(255, 60, 80),
-    },
-    Font     = Enum.Font.GothamMedium,
-    FontBold = Enum.Font.GothamBold,
-}
+local plr = Players.LocalPlayer
+repeat task.wait() until plr and plr.Character
+repeat task.wait() until plr:FindFirstChild("PlayerGui")
+repeat task.wait() until plr.Character:FindFirstChild("HumanoidRootPart")
 
---// ═══════════════════════════════════════════
---// STATE MANAGEMENT
---// ═══════════════════════════════════════════
-local State = {
-    AutoFarmON   = false,
-    AutoQuestON  = true,
-    FastAttackON = true,
-    BringMobsON  = true,
-    AutoHakiON   = true,
-    Running      = false,
-    StopFlag     = false,
-    CurrentTask  = "Idle",
-    KilledCount  = 0,
-    Level        = 1,
-}
+local function getC() return plr.Character or plr.CharacterAdded:Wait() end
+local function getR() local c = getC(); return c:FindFirstChild("HumanoidRootPart") or c:WaitForChild("HumanoidRootPart") end
+local function getH() local c = getC(); return c:FindFirstChild("Humanoid") or c:WaitForChild("Humanoid") end
+local function getLv() return (plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Level") and plr.Data.Level.Value) or 1 end
 
---// ═══════════════════════════════════════════
---// HELPER UTILITIES
---// ═══════════════════════════════════════════
-local function getHRP() 
-    local c = LocalPlayer.Character 
-    return c and c:FindFirstChild("HumanoidRootPart") 
-end
+local Remotes = RS:WaitForChild("Remotes", 5)
+local CF = Remotes and Remotes:WaitForChild("CommF_", 5)
+local CE = Remotes and Remotes:WaitForChild("CommE_", 5)
 
-local function getHumanoid() 
-    local c = LocalPlayer.Character 
-    return c and c:FindFirstChildOfClass("Humanoid") 
-end
-
-local function getLevel()
-    local ls = LocalPlayer:FindFirstChild("Data") or LocalPlayer:FindFirstChild("leaderstats")
-    if not ls then return 1 end
-    local lvl = ls:FindFirstChild("Level")
-    return lvl and lvl.Value or 1
-end
-
-LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+-- Anti-AFK Kick Protection
+plr.Idled:Connect(function()
+    VU:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    VU:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
-local function equipWeapon()
-    local char = LocalPlayer.Character
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if not char or not backpack then return end
+-- ======================
+-- [LOCATIONS & BOSS DATA]
+-- ======================
+local ISLANDS = {
+    {"Jungle", Vector3.new(-3863.5, 461.2, -2392.9)},
+    {"Pirate Village", Vector3.new(-1122.7, 4.5, 3855.6)},
+    {"Desert", Vector3.new(984.4, 4.5, 4101.8)},
+    {"Frozen Village", Vector3.new(1121.3, 5.4, 1111.1)},
+    {"Marine Fortress", Vector3.new(-5051.7, 80.2, 4335.1)},
+    {"Skylands", Vector3.new(-4859.5, 734.5, -5234.7)},
+    {"Magma Village", Vector3.new(-5402.9, 43.6, 8442.1)},
+    {"Underwater City", Vector3.new(3562.3, 118.1, -5924.2)},
+    {"Kingdom of Rose", Vector3.new(-2621.6, 32.3, -7895.4)},
+    {"Green Zone", Vector3.new(2020.4, 88.6, -9052.5)},
+    {"Floating Turtle", Vector3.new(-697.3, 145.5, 13970.8)}
+}
+local ISLAND_NAMES = {}
+for _, v in ipairs(ISLANDS) do ISLAND_NAMES[v[1]] = v[2] end
 
-    if not char:FindFirstChildOfClass("Tool") then
-        for _, tool in ipairs(backpack:GetChildren()) do
-            if tool:IsA("Tool") then
-                local toolTip = tool.ToolTip or ""
-                if (Config.SelectedWeapon == "Melee" and (toolTip == "Melee" or tool:FindFirstChild("Melee"))) or
-                   (Config.SelectedWeapon == "Blox Fruit" and (toolTip == "Blox Fruit" or toolTip == "Devil Fruit")) or
-                   (Config.SelectedWeapon == "Sword" and toolTip == "Sword") or
-                   (Config.SelectedWeapon == "Gun" and toolTip == "Gun") then
-                    local hum = getHumanoid()
-                    if hum then hum:EquipTool(tool) end
-                    break
-                end
-            end
-        end
-    end
+local BOSSES = {
+    {"Gorilla King", Vector3.new(-1122.7, 4.5, 3855.6)},
+    {"Vice Admiral", Vector3.new(-4859.5, 734.5, -5234.7)},
+    {"Don Swan", Vector3.new(-2284.7, 21.8, 8759.8)},
+    {"Order", Vector3.new(-6242.8, 20.8, -5018.4)},
+    {"RIP Indra", Vector3.new(-5314.6, 32.4, 8848.3)},
+    {"Dough King", Vector3.new(-2218.7, 73.8, 5328.6)},
+    {"Cake Prince", Vector3.new(-2117.6, 38.8, -12028.8)},
+    {"Cyborg", Vector3.new(6243.8, 20.8, -4958.6)},
+    {"Stone", Vector3.new(1392.3, 98.8, -1029.6)},
+    {"Island Empress", Vector3.new(5646.7, 20.8, -648.6)}
+}
+
+local QUESTS = {
+    {min=1, max=9, npc="BanditQuestGiver", mob="Bandit", quest="BanditQuest1", lq=1, island="Jungle"},
+    {min=10, max=14, npc="MonkeyQuestGiver", mob="Monkey", quest="JungleQuest", lq=1, island="Jungle"},
+    {min=15, max=29, npc="GorillaQuestGiver", mob="Gorilla", quest="JungleQuest", lq=2, island="Jungle"},
+    {min=30, max=39, npc="PirateQuestGiver", mob="Pirate", quest="PirateQuest", lq=1, island="Pirate Village"},
+    {min=40, max=54, npc="BruteQuestGiver", mob="Brute", quest="PirateQuest", lq=2, island="Pirate Village"},
+    {min=60, max=74, npc="DesertBanditQuestGiver", mob="Desert Bandit", quest="DesertQuest", lq=1, island="Desert"},
+    {min=75, max=89, npc="DesertOfficerQuestGiver", mob="Desert Officer", quest="DesertQuest", lq=2, island="Desert"},
+    {min=90, max=99, npc="SnowBanditQuestGiver", mob="Snow Bandit", quest="SnowQuest", lq=1, island="Frozen Village"},
+    {min=100, max=119, npc="SnowmanQuestGiver", mob="Snowman", quest="SnowQuest", lq=2, island="Frozen Village"},
+    {min=120, max=134, npc="ChiefPettyQuestGiver", mob="Chief Petty Officer", quest="MarineQuest", lq=1, island="Marine Fortress"},
+    {min=135, max=149, npc="ViceAdmiralQuestGiver", mob="Vice Admiral", quest="MarineQuest", lq=2, island="Marine Fortress"},
+    {min=150, max=174, npc="SkyBanditQuestGiver", mob="Sky Bandit", quest="SkyQuest", lq=1, island="Skylands"},
+    {min=175, max=189, npc="DarkMasterQuestGiver", mob="Dark Master", quest="SkyQuest", lq=2, island="Skylands"},
+    {min=190, max=224, npc="TogaWarriorQuestGiver", mob="Toga Warrior", quest="ColosseumQuest", lq=1, island="Colosseum"},
+    {min=225, max=249, npc="GladiatorQuestGiver", mob="Gladiator", quest="ColosseumQuest", lq=2, island="Colosseum"},
+    {min=250, max=299, npc="MilitarySoldierQuestGiver", mob="Military Soldier", quest="MagmaQuest", lq=1, island="Magma Village"},
+    {min=300, max=324, npc="MilitarySpyQuestGiver", mob="Military Spy", quest="MagmaQuest", lq=2, island="Magma Village"},
+    {min=325, max=374, npc="FishmanWarriorQuestGiver", mob="Fishman Warrior", quest="FishmanQuest", lq=1, island="Underwater City"},
+    {min=375, max=399, npc="FishmanCommandoQuestGiver", mob="Fishman Commando", quest="FishmanQuest", lq=2, island="Underwater City"},
+    {min=400, max=449, npc="GodGuardQuestGiver", mob="God's Guard", quest="SkyExpQuest", lq=1, island="Upper Skylands"},
+    {min=450, max=474, npc="ShandaQuestGiver", mob="Shanda", quest="SkyExpQuest", lq=2, island="Upper Skylands"},
+    {min=475, max=624, npc="GalleyPirateQuestGiver", mob="Galley Pirate", quest="FountainQuest", lq=1, island="Fountain City"},
+    {min=625, max=699, npc="GalleyCaptainQuestGiver", mob="Galley Captain", quest="FountainQuest", lq=2, island="Fountain City"},
+    {min=700, max=724, npc="RaiderQuestGiver", mob="Raider", quest="PiratePortQuest", lq=1, island="Kingdom of Rose"},
+    {min=725, max=874, npc="MercenaryQuestGiver", mob="Mercenary", quest="PiratePortQuest", lq=2, island="Kingdom of Rose"},
+    {min=875, max=899, npc="MarineQuestGiver", mob="Marine", quest="MarineTreeQuest", lq=1, island="Green Zone"},
+    {min=900, max=949, npc="MarineCaptainQuestGiver", mob="Marine Captain", quest="MarineTreeQuest", lq=2, island="Green Zone"},
+    {min=950, max=974, npc="ZombieQuestGiver", mob="Zombie", quest="GraveyardQuest", lq=1, island="Graveyard"},
+    {min=975, max=999, npc="VampireQuestGiver", mob="Vampire", quest="GraveyardQuest", lq=2, island="Graveyard"}
+}
+
+-- ======================
+-- [STATE CONFIGURATION]
+-- ======================
+local C = {
+    bg = Color3.fromRGB(15, 15, 25),
+    card = Color3.fromRGB(25, 25, 40),
+    primary = Color3.fromRGB(140, 0, 255),
+    accent = Color3.fromRGB(0, 210, 255),
+    text = Color3.fromRGB(240, 240, 255),
+    textMuted = Color3.fromRGB(140, 140, 170),
+    on = Color3.fromRGB(0, 230, 120),
+    off = Color3.fromRGB(45, 45, 70),
+    danger = Color3.fromRGB(255, 60, 60),
+    warning = Color3.fromRGB(255, 180, 0),
+    fruit = Color3.fromRGB(255, 110, 0)
+}
+
+local T = {
+    autoFarm = false, autoLevel = false, autoMastery = false, autoStats = false,
+    autoQuest = false, autoChest = false, killAura = false, autoPvP = false,
+    godMode = false, fastAttack = false, noCooldown = false, autoBoss = false,
+    autoAllBosses = false, autoSeaBeast = false, autoTerrorshark = false,
+    autoLeviathan = false, autoCollectFruit = false, autoStoreFruit = false,
+    autoRandomFruit = false, fruitESP = false, chestESP = false, enemyESP = false,
+    fly = false, infiniteJump = false, noClip = false, walkOnWater = false,
+    speed = false, fpsBoost = false, autoBounty = false, autoRaid = false
+}
+
+for _, b in ipairs(BOSSES) do 
+    T["boss_" .. b[1]:gsub("%s+", "")] = false 
 end
 
-local function checkHaki()
-    if not State.AutoHakiON then return end
-    local char = LocalPlayer.Character
-    if char and not char:FindFirstChild("HasBuso") then
-        pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("HasBuso")
-        end)
-    end
-end
-
-local function moveToPos(targetPos)
-    local hrp = getHRP()
-    if not hrp then return end
-
-    while State.AutoFarmON and not State.StopFlag do
-        hrp = getHRP()
-        if not hrp then break end
-
-        local dist = (hrp.Position - targetPos).Magnitude
-        if dist <= 8 then
-            hrp.CFrame = CFrame.new(targetPos)
-            break
-        end
-
-        local step = math.min(dist, Config.FlightSpeed * RunService.Heartbeat:Wait())
-        local dir = (targetPos - hrp.Position).Unit
-        hrp.CFrame = CFrame.new(hrp.Position + dir * step)
-    end
-end
-
-local function performAttack()
-    if not State.AutoFarmON or not State.FastAttackON then return end
-    pcall(function()
-        local char = LocalPlayer.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        if tool then
-            tool:Activate()
-            VirtualUser:Button1Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-            VirtualUser:Button1Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-            
-            local net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-            if net and net:FindFirstChild("RE/RegisterAttack") then
-                net["RE/RegisterAttack"]:FireServer()
-            end
-        end
-    end)
-end
-
-task.spawn(function()
-    while true do
-        task.wait(0.01)
-        if State.AutoFarmON and State.FastAttackON then
-            performAttack()
-        end
-    end
-end)
-
-local function bringNearestMobs(primaryEnemy)
-    if not State.BringMobsON or not primaryEnemy then return end
-    local primaryHrp = primaryEnemy:FindFirstChild("HumanoidRootPart")
-    if not primaryHrp then return end
-
-    local folder = workspace:FindFirstChild("Enemies") or workspace
-    for _, mob in ipairs(folder:GetChildren()) do
-        if mob:IsA("Model") and mob ~= primaryEnemy and mob.Name == primaryEnemy.Name then
-            local h = mob:FindFirstChildOfClass("Humanoid")
-            local mHrp = mob:FindFirstChild("HumanoidRootPart")
-            if h and mHrp and h.Health > 0 then
-                if (mHrp.Position - primaryHrp.Position).Magnitude <= Config.BringMobDistance then
-                    mHrp.CFrame = primaryHrp.CFrame
-                    mHrp.CanCollide = false
-                    h:ChangeState(11)
-                end
-            end
-        end
-    end
-end
-
-local function hasQuest()
-    local gui = LocalPlayer:FindFirstChild("PlayerGui")
-    local mainGui = gui and gui:FindFirstChild("Main")
-    local questFrame = mainGui and mainGui:FindFirstChild("Quest")
-    if questFrame and questFrame.Visible then
-        local container = questFrame:FindFirstChild("Container") or questFrame
-        local questTitle = container:FindFirstChild("QuestTitle") or container:FindFirstChild("Title")
-        if questTitle and questTitle:IsA("TextLabel") and questTitle.Text ~= "" then
-            return true
-        end
-        return true
+-- ======================
+-- [CORE UTILITIES]
+-- ======================
+local function cmd(...) 
+    if CF then
+        return pcall(CF.InvokeServer, CF, ...) 
     end
     return false
 end
 
-local function acceptQuest(targetData)
-    if hasQuest() then return end
-    moveToPos(targetData.NPCPos)
-    task.wait(0.3)
-    pcall(function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", targetData.Quest, targetData.QuestLvl)
-    end)
-    task.wait(0.5)
+local function tweenTo(pos, speed)
+    speed = speed or 350
+    local r = getR()
+    local h = getH()
+    if r and h then
+        if (r.Position - pos).Magnitude > 500 then
+            r.CFrame = CFrame.new(pos + Vector3.new(0, 50, 0))
+        else
+            h:MoveTo(pos)
+        end
+        task.wait(0.2)
+    end
 end
 
-local function findNearestTarget(mobName)
-    local hrp = getHRP()
-    if not hrp then return nil end
-    local closest, closestDist = nil, math.huge
-    local folder = workspace:FindFirstChild("Enemies") or workspace
+local function findEnemy(options)
+    options = options or {}
+    local enemiesFolder = workspace:FindFirstChild("Enemies") or workspace:FindFirstChild("NPCs")
+    if not enemiesFolder then return nil end
 
-    for _, obj in ipairs(folder:GetChildren()) do
-        if obj:IsA("Model") and obj.Name:lower():find(mobName:lower(), 1, true) then
-            local h = obj:FindFirstChildOfClass("Humanoid")
-            local objHrp = obj:FindFirstChild("HumanoidRootPart")
-            if h and objHrp and h.Health > 0 then
-                local d = (hrp.Position - objHrp.Position).Magnitude
-                if d < closestDist then closest, closestDist = obj, d end
+    local bestTarget, bestScore = nil, -math.huge
+    for _, e in pairs(enemiesFolder:GetChildren()) do
+        if e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 and e:FindFirstChild("HumanoidRootPart") then
+            if options.name and not e.Name:find(options.name) then continue end
+            local score = (e:FindFirstChild("Level") and e.Level.Value or 0) * 10
+            if options.prioritizeClose then
+                local r = getR()
+                if r then score = score + (10000 - (r.Position - e.HumanoidRootPart.Position).Magnitude) end
+            end
+            if score > bestScore then 
+                bestScore, bestTarget = score, e 
             end
         end
     end
-    return closest
+    return bestTarget
 end
 
-local function executeAttack(targetModel)
-    local enemyHrp = targetModel:FindFirstChild("HumanoidRootPart")
-    local enemyHum = targetModel:FindFirstChildOfClass("Humanoid")
-    local hrp = getHRP()
-
-    if not enemyHrp or not enemyHum or not hrp then return end
-
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-    bv.Velocity = Vector3.zero
-    bv.Parent = hrp
-
-    local startTime = tick()
-    while not State.StopFlag and State.AutoFarmON do
-        if not enemyHum or enemyHum.Health <= 0 or not enemyHrp.Parent then break end
-
-        local hoverPos = enemyHrp.Position + Vector3.new(0, Config.HoverHeight, 0)
-        hrp.CFrame = CFrame.new(hoverPos, enemyHrp.Position)
-
-        equipWeapon()
-        checkHaki()
-        performAttack()
-        bringNearestMobs(targetModel)
-
-        RunService.Heartbeat:Wait()
-        if tick() - startTime > 25 then break end
+local function attackTarget(target)
+    local r = getR()
+    if not r or not target then return end
+    local tp = target:FindFirstChild("HumanoidRootPart") or target
+    r.CFrame = tp.CFrame * CFrame.new(0, 0, 10)
+    
+    local tool = char:FindFirstChildOfClass("Tool") or plr.Backpack:FindFirstChildOfClass("Tool")
+    if tool then
+        if tool.Parent ~= char then tool.Parent = char end
+        tool:Activate()
     end
+    VU:ClickButton1(Vector2.new(), workspace.CurrentCamera.CFrame)
+end
 
-    bv:Destroy()
-    if enemyHum and enemyHum.Health <= 0 then
-        State.KilledCount = State.KilledCount + 1
+-- ESP System
+local espObjs = {}
+local function addESP(obj, color, text)
+    if espObjs[obj] or not obj then return end
+    local b = Instance.new("BillboardGui")
+    b.Name = "EIC_ESP_" .. math.random(1000, 9999)
+    b.Size = UDim2.new(0, 120, 0, 30)
+    b.Adornee = obj
+    b.AlwaysOnTop = true
+    b.StudsOffset = Vector3.new(0, 3, 0)
+    
+    local l = Instance.new("TextLabel", b)
+    l.Size = UDim2.new(1, 0, 1, 0)
+    l.BackgroundTransparency = 1
+    l.Text = text
+    l.TextColor3 = color
+    l.TextStrokeColor3 = Color3.new(0, 0, 0)
+    l.TextStrokeTransparency = 0
+    l.TextSize = 13
+    l.Font = Enum.Font.GothamBold
+    b.Parent = plr:WaitForChild("PlayerGui")
+    espObjs[obj] = b
+end
+
+local function clearESP()
+    for obj, b in pairs(espObjs) do
+        if b and b.Parent then b:Destroy() end
+    end
+    espObjs = {}
+end
+
+-- ======================
+-- [QUEST LOGIC]
+-- ======================
+local currentQuest = nil
+local function takeQuest()
+    local lv = getLv()
+    for _, q in ipairs(QUESTS) do
+        if lv >= q.min and lv <= q.max then
+            cmd("AbandonQuest")
+            local pos = ISLAND_NAMES[q.island]
+            if pos then tweenTo(pos) end
+            cmd("StartQuest", q.npc, q.quest)
+            currentQuest = q
+            break
+        end
     end
 end
+
+local function farmCurrent()
+    if not currentQuest then
+        takeQuest()
+        return
+    end
+    local mob = currentQuest.mob
+    local enemy = findEnemy({name = mob, prioritizeClose = true})
+    if enemy then
+        attackTarget(enemy)
+    else
+        local pos = ISLAND_NAMES[currentQuest.island]
+        if pos then tweenTo(pos) end
+    end
+end
+
+-- ======================
+-- [BACKGROUND LOOPS]
+-- ======================
+-- Farming Loop
+spawn(function()
+    while task.wait(0.15) do
+        pcall(function()
+            if T.autoFarm or T.autoLevel then farmCurrent() end
+            if T.autoStats then
+                local pts = plr.Data.Points.Value or 0
+                if pts > 0 then
+                    cmd("AddPoint", "Melee", pts)
+                end
+            end
+            if T.autoChest then
+                for _, obj in pairs(workspace:GetChildren()) do
+                    if obj.Name:find("Chest") and obj:IsA("Model") and obj:FindFirstChild("Handle") then
+                        local r = getR()
+                        if r then r.CFrame = obj.Handle.CFrame end
+                        task.wait(0.1)
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Combat / KillAura Loop
+spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            if T.killAura or T.fastAttack then
+                local enemiesFolder = workspace:FindFirstChild("Enemies")
+                if enemiesFolder then
+                    for _, e in pairs(enemiesFolder:GetChildren()) do
+                        if e:FindFirstChild("Humanoid") and e:FindFirstChild("HumanoidRootPart") and e.Humanoid.Health > 0 then
+                            local r = getR()
+                            if r and (r.Position - e.HumanoidRootPart.Position).Magnitude < 50 then
+                                attackTarget(e)
+                            end
+                        end
+                    end
+                end
+            end
+            if T.autoAllBosses then
+                for _, bname in ipairs(BOSSES) do
+                    local e = findEnemy({name = bname[1]})
+                    if e then attackTarget(e); break end
+                end
+            end
+        end)
+    end
+end)
+
+-- ESP & Item Loop
+spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            clearESP()
+            if T.autoCollectFruit then
+                for _, obj in pairs(workspace:GetChildren()) do
+                    if (obj:IsA("Tool") or obj.Name:find("Fruit")) and obj:FindFirstChild("Handle") then
+                        local r = getR()
+                        if r then r.CFrame = obj.Handle.CFrame end
+                    end
+                end
+            end
+            if T.autoStoreFruit then
+                for _, obj in pairs(plr.Backpack:GetChildren()) do
+                    if obj:IsA("Tool") and obj.Name:find("Fruit") then 
+                        cmd("StoreFruit", obj.Name) 
+                    end
+                end
+            end
+            if T.fruitESP then
+                for _, o in pairs(workspace:GetChildren()) do
+                    if (o:IsA("Tool") or o.Name:find("Fruit")) and o:FindFirstChild("Handle") then
+                        addESP(o.Handle, C.fruit, "🍎 " .. o.Name)
+                    end
+                end
+            end
+            if T.enemyESP then
+                local enemiesFolder = workspace:FindFirstChild("Enemies")
+                if enemiesFolder then
+                    for _, e in pairs(enemiesFolder:GetChildren()) do
+                        if e:FindFirstChild("HumanoidRootPart") and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
+                            addESP(e.HumanoidRootPart, C.danger, "☠️ " .. e.Name)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- Movement & Flight Loop
+local flying, bg, bv = false, nil, nil
+spawn(function()
+    while task.wait(0.03) do
+        pcall(function()
+            local r = getR()
+            if not r then return end
+            if T.fly then
+                if not flying then
+                    flying = true
+                    bg = Instance.new("BodyGyro", r)
+                    bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                    bg.P = 10000
+                    bv = Instance.new("BodyVelocity", r)
+                    bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                end
+                bg.CFrame = workspace.CurrentCamera.CFrame
+                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * (T.speed and 200 or 100)
+            elseif flying then
+                flying = false
+                if bg then bg:Destroy() end
+                if bv then bv:Destroy() end
+            end
+            if T.infiniteJump and UIS:IsKeyDown(Enum.KeyCode.Space) then
+                r.Velocity = Vector3.new(r.Velocity.X, 60, r.Velocity.Z)
+            end
+            if T.noClip then
+                for _, p in pairs(getC():GetDescendants()) do
+                    if p:IsA("BasePart") then p.CanCollide = false end
+                end
+            end
+        end)
+    end
+end)
+
+-- ======================
+-- [UI CONSTRUCT]
+-- ======================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EicHubUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+-- Floating Logo Toggle Button
+local Logo = Instance.new("ImageButton")
+Logo.Name = "EicLogo"
+Logo.Parent = ScreenGui
+Logo.Size = UDim2.new(0, 65, 0, 65)
+Logo.Position = UDim2.new(0.03, 0, 0.4, 0)
+Logo.BackgroundColor3 = C.bg
+Logo.Image = LOGO_ASSET_ID
+Logo.Active = true
+
+local LogoCorner = Instance.new("UICorner", Logo)
+LogoCorner.CornerRadius = UDim.new(1, 0)
+
+local LogoStroke = Instance.new("UIStroke", Logo)
+LogoStroke.Color = C.primary
+LogoStroke.Thickness = 2.5
+
+-- Fallback Text if Asset modern loader fails
+local FallbackText = Instance.new("TextLabel", Logo)
+FallbackText.Size = UDim2.new(1, 0, 1, 0)
+FallbackText.BackgroundTransparency = 1
+FallbackText.Text = "EIC"
+FallbackText.TextColor3 = C.text
+FallbackText.TextSize = 18
+FallbackText.Font = Enum.Font.GothamBold
+FallbackText.Visible = false
 
 task.spawn(function()
-    while task.wait(1) do
-        if Config.AutoStatMelee then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Melee", 1) end
-        if Config.AutoStatDefense then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Defense", 1) end
-        if Config.AutoStatSword then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Sword", 1) end
-        if Config.AutoStatFruit then ReplicatedStorage.Remotes.CommF_:InvokeServer("AddPoint", "Demon Fruit", 1) end
+    task.wait(2)
+    if Logo.ImageContentId == "" or Logo.ImageContentId == "rbxassetid://0" then
+        FallbackText.Visible = true
     end
 end)
 
---// ═══════════════════════════════════════════
---// MAIN AUTO FARM LOOP
---// ═══════════════════════════════════════════
-local function autoFarmLoop()
-    if State.Running then return end
-    State.Running = true
-    State.StopFlag = false
+-- Main Menu Window
+local Menu = Instance.new("Frame")
+Menu.Name = "EicMenu"
+Menu.Parent = ScreenGui
+Menu.Size = UDim2.new(0, 0, 0, 0)
+Menu.Position = UDim2.new(0.5, -310, 0.5, -200)
+Menu.BackgroundColor3 = C.bg
+Menu.Visible = false
+Menu.Active = true
+Menu.ClipsDescendants = true
 
-    while not State.StopFlag and State.AutoFarmON do
-        local char = LocalPlayer.Character
-        if not char or not getHRP() then task.wait(0.5); continue end
+local MenuCorner = Instance.new("UICorner", Menu)
+MenuCorner.CornerRadius = UDim.new(0, 10)
 
-        State.Level = getLevel()
-        local targetInfo = getTargetData(State.Level)
+local MenuStroke = Instance.new("UIStroke", Menu)
+MenuStroke.Color = C.primary
+MenuStroke.Thickness = 1.5
 
-        if State.AutoQuestON and not hasQuest() then
-            State.CurrentTask = "Accepting Quest: " .. targetInfo.Quest
-            acceptQuest(targetInfo)
-        end
+-- Header Title
+local Header = Instance.new("Frame", Menu)
+Header.Size = UDim2.new(1, 0, 0, 40)
+Header.BackgroundColor3 = C.card
 
-        while not State.StopFlag and State.AutoFarmON do
-            if State.AutoQuestON and not hasQuest() then
-                break
-            end
+local HeaderTitle = Instance.new("TextLabel", Header)
+HeaderTitle.Size = UDim2.new(1, -20, 1, 0)
+HeaderTitle.Position = UDim2.new(0, 15, 0, 0)
+HeaderTitle.BackgroundTransparency = 1
+HeaderTitle.Text = "⚡ EIC HUB v3.0 | BLOX FRUITS OP"
+HeaderTitle.TextColor3 = C.text
+HeaderTitle.TextSize = 15
+HeaderTitle.Font = Enum.Font.GothamBold
+HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-            State.CurrentTask = "Hunting: " .. targetInfo.Mob
-            local enemy = findNearestTarget(targetInfo.Mob)
-
-            if enemy and enemy:FindFirstChild("HumanoidRootPart") then
-                State.CurrentTask = "Attacking " .. enemy.Name
-                executeAttack(enemy)
-            else
-                State.CurrentTask = "Searching " .. targetInfo.Mob
-                moveToPos(targetInfo.NPCPos + Vector3.new(0, 25, 0))
-                task.wait(0.5)
-            end
-        end
+-- Toggle Menu Visibility
+Logo.MouseButton1Click:Connect(function()
+    if Menu.Visible then
+        local closeTween = TweenService:Create(Menu, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0)})
+        closeTween:Play()
+        closeTween.Completed:Wait()
+        Menu.Visible = false
+    else
+        Menu.Size = UDim2.new(0, 0, 0, 0)
+        Menu.Visible = true
+        TweenService:Create(Menu, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 620, 0, 400)}):Play()
     end
-
-    State.Running = false
-    State.CurrentTask = "Idle"
-    State.StopFlag = false
-end
-
---// ═══════════════════════════════════════════
---// USER INTERFACE GENERATOR
---// ═══════════════════════════════════════════
-local function create(className, props)
-    local inst = Instance.new(className)
-    for k, v in pairs(props or {}) do
-        if k ~= "Parent" then inst[k] = v end
-    end
-    if props and props.Parent then inst.Parent = props.Parent end
-    return inst
-end
-
-local function corner(parent, radius)
-    return create("UICorner", { CornerRadius = UDim.new(0, radius or 6), Parent = parent })
-end
-
-local function stroke(parent, color, thickness, transparency)
-    return create("UIStroke", {
-        Color = color or Config.Colors.Border,
-        Thickness = thickness or 1,
-        Transparency = transparency or 0.4,
-        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-        Parent = parent,
-    })
-end
-
-local function tween(obj, time, props)
-    local t = TweenService:Create(obj, TweenInfo.new(time or 0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props)
-    t:Play()
-    return t
-end
-
-local parentGui = pcall(function() return CoreGui end) and CoreGui or LocalPlayer:WaitForChild("PlayerGui")
-if parentGui:FindFirstChild("redzHubv3") then parentGui.redzHubv3:Destroy() end
-
-local ScreenGui = create("ScreenGui", {
-    Name = "redzHubv3",
-    ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-    IgnoreGuiInset = true,
-    Parent = parentGui,
-})
-
-local Main = create("Frame", {
-    Name = "Main", Parent = ScreenGui, BackgroundColor3 = Config.Colors.Background,
-    BorderSizePixel = 0, Size = UDim2.new(0, 640, 0, 430),
-    Position = UDim2.new(0.5, -320, 0.5, -215), Active = true, Draggable = true,
-})
-corner(Main, 10)
-stroke(Main, Config.Colors.Accent, 1.5, 0.2)
-
-local TopBar = create("Frame", { Name = "TopBar", Parent = Main, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42) })
-
-create("TextLabel", {
-    Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 6),
-    Size = UDim2.new(0, 220, 0, 18), Font = Config.FontBold, Text = "redz Hub v3 — Blox Fruits",
-    TextColor3 = Config.Colors.Accent, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-create("TextLabel", {
-    Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(0, 16, 0, 24),
-    Size = UDim2.new(0, 220, 0, 12), Font = Config.Font, Text = "Complete Fixed Edition | v3.0",
-    TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local btnContainer = create("Frame", { Parent = TopBar, BackgroundTransparency = 1, Position = UDim2.new(1, -76, 0, 10), Size = UDim2.new(0, 66, 0, 22) })
-
-local function makeWinBtn(text, xPos, hoverColor, callback)
-    local btn = create("TextButton", {
-        Parent = btnContainer, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
-        Position = UDim2.new(0, xPos, 0, 0), Size = UDim2.new(0, 20, 0, 20), Font = Config.FontBold,
-        Text = text, TextColor3 = Config.Colors.Text, TextSize = 12, AutoButtonColor = false,
-    })
-    corner(btn, 5)
-    btn.MouseEnter:Connect(function() tween(btn, 0.15, { BackgroundColor3 = hoverColor }) end)
-    btn.MouseLeave:Connect(function() tween(btn, 0.15, { BackgroundColor3 = Config.Colors.Element }) end)
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
-
-makeWinBtn("–", 0, Config.Colors.ElementHover, function()
-    Main.Visible = false
-    local reopen = create("TextButton", {
-        Parent = ScreenGui, BackgroundColor3 = Config.Colors.Accent, BorderSizePixel = 0,
-        Size = UDim2.new(0, 110, 0, 30), Position = UDim2.new(0, 20, 0, 60), Font = Config.FontBold,
-        Text = "redz Hub v3", TextColor3 = Config.Colors.Text, TextSize = 12, AutoButtonColor = false,
-    })
-    corner(reopen, 6)
-    reopen.MouseButton1Click:Connect(function() Main.Visible = true; reopen:Destroy() end)
 end)
 
-makeWinBtn("✕", 24, Color3.fromRGB(200, 35, 45), function()
-    ScreenGui:Destroy()
-    State.StopFlag = true
+-- Touch & Mouse Dragging for Logo Button
+local dragging, dragStart, startPos = false, nil, nil
+Logo.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Logo.Position
+    end
 end)
 
-local Sidebar = create("Frame", {
-    Parent = Main, BackgroundColor3 = Config.Colors.Sidebar, BackgroundTransparency = 0.1,
-    BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, 42), Size = UDim2.new(0, 150, 1, -42),
-})
+UIS.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        Logo.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
-local SideScroll = create("ScrollingFrame", {
-    Parent = Sidebar, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0, 6, 0, 8),
-    Size = UDim2.new(1, -12, 1, -16), CanvasSize = UDim2.new(0, 0, 0, 0), ScrollBarThickness = 2,
-    ScrollBarImageColor3 = Config.Colors.Accent, AutomaticCanvasSize = Enum.AutomaticSize.Y,
-})
-create("UIListLayout", { Parent = SideScroll, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder })
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
 
-local Content = create("Frame", {
-    Parent = Main, BackgroundTransparency = 1, Position = UDim2.new(0, 150, 0, 42), Size = UDim2.new(1, -150, 1, -42),
-})
+-- Scroll Container
+local ContentScroll = Instance.new("ScrollingFrame", Menu)
+ContentScroll.Size = UDim2.new(1, -20, 1, -55)
+ContentScroll.Position = UDim2.new(0, 10, 0, 45)
+ContentScroll.BackgroundTransparency = 1
+ContentScroll.ScrollBarThickness = 4
+ContentScroll.ScrollBarImageColor3 = C.primary
 
+local ContentLayout = Instance.new("UIListLayout", ContentScroll)
+ContentLayout.Padding = UDim.new(0, 8)
+ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ContentScroll.CanvasSize = UDim2.new(0, 0, 0, ContentLayout.AbsoluteContentSize.Y + 20)
+end)
+
+-- Categories Structure
 local CATEGORIES = {
-    "Main Farming", "Combat & OP Mods", "Auto Stats", 
-    "Teleports & Seas", "Fruit & Raids", "Settings & Info"
+    {name = "🔥 AUTOMATION & FARM", color = C.on, toggles = {"autoFarm", "autoLevel", "autoMastery", "autoStats", "autoChest"}},
+    {name = "⚔️ OP COMBAT & PVP", color = C.danger, toggles = {"killAura", "fastAttack", "godMode", "autoPvP", "autoBounty"}},
+    {name = "👹 BOSS & RAID FARM", color = C.warning, toggles = {"autoAllBosses", "autoRaid"}},
+    {name = "🍎 FRUITS & ITEMS", color = C.fruit, toggles = {"autoCollectFruit", "autoStoreFruit", "autoRandomFruit", "fruitESP"}},
+    {name = "👁️ ESP & VISUALS", color = C.accent, toggles = {"chestESP", "enemyESP"}},
+    {name = "🛩️ MOVEMENT & TELEPORT", color = C.primary, toggles = {"fly", "infiniteJump", "noClip", "speed"}}
 }
 
-local Pages = {}
-local buttons = {}
-local selected = nil
+for _, cat in ipairs(CATEGORIES) do
+    local CategoryFrame = Instance.new("Frame", ContentScroll)
+    CategoryFrame.Size = UDim2.new(1, 0, 0, 30)
+    CategoryFrame.BackgroundColor3 = C.card
+    
+    local CatCorner = Instance.new("UICorner", CategoryFrame)
+    CatCorner.CornerRadius = UDim.new(0, 6)
+    
+    local CatStroke = Instance.new("UIStroke", CategoryFrame)
+    CatStroke.Color = cat.color
+    CatStroke.Thickness = 1
+    
+    local CatTitle = Instance.new("TextLabel", CategoryFrame)
+    CatTitle.Size = UDim2.new(1, -10, 0, 28)
+    CatTitle.Position = UDim2.new(0, 10, 0, 0)
+    CatTitle.BackgroundTransparency = 1
+    CatTitle.Text = cat.name
+    CatTitle.TextColor3 = cat.color
+    CatTitle.TextSize = 13
+    CatTitle.Font = Enum.Font.GothamBold
+    CatTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-local function switchPage(name)
-    for pageName, page in pairs(Pages) do
-        page.Visible = (pageName == name)
-    end
-end
+    local Container = Instance.new("Frame", ContentScroll)
+    Container.Size = UDim2.new(1, 0, 0, 0)
+    Container.BackgroundTransparency = 1
+    
+    local Grid = Instance.new("UIGridLayout", Container)
+    Grid.CellSize = UDim2.new(0.48, 0, 0, 32)
+    Grid.CellPadding = UDim2.new(0.03, 0, 0, 6)
+    
+    for _, tKey in ipairs(cat.toggles) do
+        local Btn = Instance.new("TextButton", Container)
+        Btn.BackgroundColor3 = T[tKey] and C.on or C.off
+        Btn.Text = "  " .. tKey .. " [" .. (T[tKey] and "ON" or "OFF") .. "]"
+        Btn.TextColor3 = C.text
+        Btn.TextSize = 11
+        Btn.Font = Enum.Font.Gotham
+        Btn.TextXAlignment = Enum.TextXAlignment.Left
 
-for _, catName in ipairs(CATEGORIES) do
-    local btn = create("TextButton", {
-        Parent = SideScroll, BackgroundColor3 = Config.Colors.Element, BackgroundTransparency = 1,
-        BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 28), Font = Config.FontBold,
-        Text = "  " .. catName, TextColor3 = Config.Colors.TextDim, TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Left, AutoButtonColor = false, Name = catName,
-    })
-    corner(btn, 5)
+        local BtnCorner = Instance.new("UICorner", Btn)
+        BtnCorner.CornerRadius = UDim.new(0, 4)
 
-    local indicator = create("Frame", {
-        Parent = btn, BackgroundColor3 = Config.Colors.Accent, BorderSizePixel = 0,
-        Size = UDim2.new(0, 3, 0.6, 0), Position = UDim2.new(0, 0, 0.2, 0), Visible = false, Name = "Indicator",
-    })
-    corner(indicator, 2)
-
-    btn.MouseButton1Click:Connect(function()
-        if selected == catName then return end
-        selected = catName
-        for _, other in ipairs(buttons) do
-            other.BackgroundTransparency = 1
-            other.TextColor3 = Config.Colors.TextDim
-            other.Indicator.Visible = false
-        end
-        btn.BackgroundTransparency = 0.4
-        btn.TextColor3 = Config.Colors.Accent
-        indicator.Visible = true
-        switchPage(catName)
-    end)
-
-    table.insert(buttons, btn)
-
-    local page = create("ScrollingFrame", {
-        Parent = Content, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, 0),
-        CanvasSize = UDim2.new(0, 0, 0, 0), ScrollBarThickness = 2, ScrollBarImageColor3 = Config.Colors.Accent,
-        AutomaticCanvasSize = Enum.AutomaticSize.Y, Visible = false, Name = catName,
-    })
-    create("UIPadding", { Parent = page, PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
-    create("UIListLayout", { Parent = page, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder })
-    Pages[catName] = page
-end
-
-local function addSection(page, text)
-    return create("TextLabel", {
-        Parent = page, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 18),
-        Font = Config.FontBold, Text = text, TextColor3 = Config.Colors.Accent,
-        TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
-    })
-end
-
-local function addToggle(page, name, default, callback)
-    local state = default or false
-    local btn = create("TextButton", {
-        Parent = page, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 30), Text = "", AutoButtonColor = false, Name = name,
-    })
-    corner(btn, 6)
-    stroke(btn, Config.Colors.Border, 1, 0.6)
-
-    create("TextLabel", {
-        Parent = btn, BackgroundTransparency = 1, Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -50, 1, 0), Font = Config.Font, Text = name,
-        TextColor3 = Config.Colors.Text, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    local sw = create("Frame", {
-        Parent = btn, BackgroundColor3 = state and Config.Colors.ToggleOn or Config.Colors.ToggleOff,
-        BorderSizePixel = 0, Position = UDim2.new(1, -42, 0.5, -8), Size = UDim2.new(0, 34, 0, 16),
-    })
-    corner(sw, 8)
-
-    local knob = create("Frame", {
-        Parent = sw, BackgroundColor3 = Color3.fromRGB(240, 240, 240), BorderSizePixel = 0,
-        Position = state and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2), Size = UDim2.new(0, 12, 0, 12),
-    })
-    corner(knob, 6)
-
-    local function update()
-        tween(sw, 0.15, { BackgroundColor3 = state and Config.Colors.ToggleOn or Config.Colors.ToggleOff })
-        tween(knob, 0.15, { Position = state and UDim2.new(1, -16, 0, 2) or UDim2.new(0, 2, 0, 2) })
-    end
-
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        update()
-        if callback then task.spawn(callback, state) end
-    end)
-
-    return { Set = function(v) state = v; update(); if callback then callback(v) end end }
-end
-
-local function addSlider(page, name, minV, maxV, default, callback)
-    local value = default or minV
-    local container = create("Frame", {
-        Parent = page, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 34), Name = name,
-    })
-    corner(container, 6)
-    stroke(container, Config.Colors.Border, 1, 0.6)
-
-    create("TextLabel", {
-        Parent = container, BackgroundTransparency = 1, Position = UDim2.new(0, 10, 0, 2),
-        Size = UDim2.new(0.7, 0, 0, 14), Font = Config.Font, Text = name,
-        TextColor3 = Config.Colors.Text, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    local valLbl = create("TextLabel", {
-        Parent = container, BackgroundTransparency = 1, Position = UDim2.new(0.7, 0, 0, 2),
-        Size = UDim2.new(0.3, -10, 0, 14), Font = Config.FontBold, Text = tostring(value),
-        TextColor3 = Config.Colors.Accent, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Right,
-    })
-
-    local track = create("Frame", {
-        Parent = container, BackgroundColor3 = Config.Colors.ToggleOff, BorderSizePixel = 0,
-        Position = UDim2.new(0, 10, 1, -12), Size = UDim2.new(1, -20, 0, 4),
-    })
-    corner(track, 2)
-
-    local fill = create("Frame", {
-        Parent = track, BackgroundColor3 = Config.Colors.Accent, BorderSizePixel = 0,
-        Size = UDim2.new((value - minV) / (maxV - minV), 0, 1, 0),
-    })
-    corner(fill, 2)
-
-    local dragging = false
-    local function updateFromX(x)
-        local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-        local v = math.floor(minV + (maxV - minV) * rel + 0.5)
-        fill.Size = UDim2.new(rel, 0, 1, 0)
-        valLbl.Text = tostring(v)
-        if callback then callback(v) end
-    end
-
-    track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            updateFromX(input.Position.X)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateFromX(input.Position.X)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-end
-
-local function addButton(page, name, callback)
-    local btn = create("TextButton", {
-        Parent = page, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 28), Font = Config.FontBold, Text = name,
-        TextColor3 = Config.Colors.Text, TextSize = 11, AutoButtonColor = false,
-    })
-    corner(btn, 6)
-    stroke(btn, Config.Colors.Border, 1, 0.6)
-    btn.MouseEnter:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.ElementHover }) end)
-    btn.MouseLeave:Connect(function() tween(btn, 0.12, { BackgroundColor3 = Config.Colors.Element }) end)
-    btn.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
-    return btn
-end
-
-local function addInfo(page, name)
-    local lbl = create("TextLabel", {
-        Parent = page, BackgroundColor3 = Config.Colors.Element, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 24), Font = Config.Font, Text = "  " .. name,
-        TextColor3 = Config.Colors.TextDim, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, Name = name,
-    })
-    corner(lbl, 6)
-    stroke(lbl, Config.Colors.Border, 1, 0.6)
-    return lbl
-end
-
---// TAB CONTENTS BINDING
-do
-    local page = Pages["Main Farming"]
-    addSection(page, "AUTO FARM CONTROLS")
-    addToggle(page, "Auto Farm Level", false, function(v)
-        State.AutoFarmON = v
-        if v then task.spawn(autoFarmLoop) else State.StopFlag = true end
-    end)
-    addToggle(page, "Auto Accept Quests", true, function(v) State.AutoQuestON = v end)
-
-    addSection(page, "WEAPON SELECTION")
-    local wBtn
-    wBtn = addButton(page, "Weapon: " .. Config.SelectedWeapon, function()
-        if Config.SelectedWeapon == "Melee" then Config.SelectedWeapon = "Blox Fruit"
-        elseif Config.SelectedWeapon == "Blox Fruit" then Config.SelectedWeapon = "Sword"
-        elseif Config.SelectedWeapon == "Sword" then Config.SelectedWeapon = "Gun"
-        else Config.SelectedWeapon = "Melee" end
-        wBtn.Text = "Weapon: " .. Config.SelectedWeapon
-    end)
-
-    addSection(page, "LIVE MONITOR")
-    local statusLbl = addInfo(page, "Status: Idle")
-    local killedLbl = addInfo(page, "Killed: 0")
-
-    task.spawn(function()
-        while ScreenGui.Parent do
-            statusLbl.Text = "  Status: " .. State.CurrentTask
-            killedLbl.Text = "  Killed: " .. State.KilledCount
-            task.wait(0.5)
-        end
-    end)
-end
-
-do
-    local page = Pages["Combat & OP Mods"]
-    addSection(page, "COMBAT MODIFICATIONS")
-    addToggle(page, "Ultra Fast Attack", true, function(v) State.FastAttackON = v end)
-    addToggle(page, "Bring Nearby Mobs", true, function(v) State.BringMobsON = v end)
-    addToggle(page, "Auto Armament Haki", true, function(v) State.AutoHakiON = v end)
-
-    addSection(page, "TWEAKS & SLIDERS")
-    addSlider(page, "Flight Speed", 100, 400, 300, function(v) Config.FlightSpeed = v end)
-    addSlider(page, "Hover Altitude", 5, 25, 10, function(v) Config.HoverHeight = v end)
-    addSlider(page, "Bring Radius", 10, 100, 50, function(v) Config.BringMobDistance = v end)
-end
-
-do
-    local page = Pages["Auto Stats"]
-    addSection(page, "AUTOMATIC STAT DISTRIBUTOR")
-    addToggle(page, "Auto Stat: Melee", false, function(v) Config.AutoStatMelee = v end)
-    addToggle(page, "Auto Stat: Defense", false, function(v) Config.AutoStatDefense = v end)
-    addToggle(page, "Auto Stat: Sword", false, function(v) Config.AutoStatSword = v end)
-    addToggle(page, "Auto Stat: Demon Fruit", false, function(v) Config.AutoStatFruit = v end)
-end
-
-do
-    local page = Pages["Teleports & Seas"]
-    addSection(page, "SEA TELEPORTS")
-    addButton(page, "Teleport to Sea 1 (First Sea)", function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain")
-    end)
-    addButton(page, "Teleport to Sea 2 (Second Sea)", function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa")
-    end)
-    addButton(page, "Teleport to Sea 3 (Third Sea)", function()
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou")
-    end)
-end
-
-do
-    local page = Pages["Fruit & Raids"]
-    addSection(page, "FRUIT UTILITIES")
-    addButton(page, "Buy Random Fruit", function()
-        pcall(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("Cousin", "Buy")
+        Btn.MouseButton1Click:Connect(function()
+            T[tKey] = not T[tKey]
+            Btn.BackgroundColor3 = T[tKey] and C.on or C.off
+            Btn.Text = "  " .. tKey .. " [" .. (T[tKey] and "ON" or "OFF") .. "]"
         end)
+    end
+    
+    Grid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Container.Size = UDim2.new(1, 0, 0, Grid.AbsoluteContentSize.Y)
     end)
 end
-
-do
-    local page = Pages["Settings & Info"]
-    addSection(page, "PLAYER & SERVER")
-    addInfo(page, "User: " .. LocalPlayer.Name)
-    local lvlInfo = addInfo(page, "Level: --")
-
-    task.spawn(function()
-        while ScreenGui.Parent do
-            lvlInfo.Text = "  Level: " .. getLevel()
-            task.wait(1)
-        end
-    end)
-
-    addButton(page, "Rejoin Server", function()
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    end)
-end
-
-if buttons[1] then
-    buttons[1].BackgroundTransparency = 0.4
-    buttons[1].TextColor3 = Config.Colors.Accent
-    buttons[1].Indicator.Visible = true
-    selected = "Main Farming"
-    switchPage("Main Farming")
-end
-
-pcall(function()
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "redz Hub v3",
-        Text = "Loaded full script successfully!",
-        Duration = 5,
-    })
-end)
-
-print("[redz Hub v3] Full script loaded successfully!")
