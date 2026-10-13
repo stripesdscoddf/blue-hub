@@ -1,13 +1,12 @@
 -- =============================================
--- EIC HUB | BLOX FRUITS (v3.0 OP EDITION)
+-- BLUE HUB | BLOX FRUITS (REDZ STYLE REWORK)
 -- UNIVERSAL MOBILE & DESKTOP EXECUTION
 -- =============================================
 local SCRIPT_VERSION = "3.0"
-local LOGO_ASSET_ID = "rbxassetid://73393542095412"
 
 -- Prevent duplicated UI instances
-if game:GetService("CoreGui"):FindFirstChild("EicHubUI") then
-    game:GetService("CoreGui"):FindFirstChild("EicHubUI"):Destroy()
+if game:GetService("CoreGui"):FindFirstChild("BlueHubUI") then
+    game:GetService("CoreGui"):FindFirstChild("BlueHubUI"):Destroy()
 end
 
 -- ======================
@@ -34,7 +33,12 @@ repeat task.wait() until plr.Character:FindFirstChild("HumanoidRootPart")
 local function getC() return plr.Character or plr.CharacterAdded:Wait() end
 local function getR() local c = getC(); return c:FindFirstChild("HumanoidRootPart") or c:WaitForChild("HumanoidRootPart") end
 local function getH() local c = getC(); return c:FindFirstChild("Humanoid") or c:WaitForChild("Humanoid") end
-local function getLv() return (plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Level") and plr.Data.Level.Value) or 1 end
+local function getLv() 
+    if plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Level") then
+        return plr.Data.Level.Value
+    end
+    return 1 
+end
 
 local Remotes = RS:WaitForChild("Remotes", 5)
 local CF = Remotes and Remotes:WaitForChild("CommF_", 5)
@@ -115,16 +119,17 @@ local QUESTS = {
 -- [STATE CONFIGURATION]
 -- ======================
 local C = {
-    bg = Color3.fromRGB(15, 15, 25),
-    card = Color3.fromRGB(25, 25, 40),
-    primary = Color3.fromRGB(140, 0, 255),
-    accent = Color3.fromRGB(0, 210, 255),
-    text = Color3.fromRGB(240, 240, 255),
-    textMuted = Color3.fromRGB(140, 140, 170),
-    on = Color3.fromRGB(0, 230, 120),
-    off = Color3.fromRGB(45, 45, 70),
-    danger = Color3.fromRGB(255, 60, 60),
-    warning = Color3.fromRGB(255, 180, 0),
+    bg = Color3.fromRGB(10, 14, 24),
+    sidebar = Color3.fromRGB(15, 22, 38),
+    card = Color3.fromRGB(20, 30, 52),
+    primary = Color3.fromRGB(0, 120, 255),
+    accent = Color3.fromRGB(0, 200, 255),
+    text = Color3.fromRGB(230, 240, 255),
+    textMuted = Color3.fromRGB(120, 140, 180),
+    on = Color3.fromRGB(0, 220, 130),
+    off = Color3.fromRGB(35, 50, 80),
+    danger = Color3.fromRGB(255, 70, 70),
+    warning = Color3.fromRGB(255, 170, 0),
     fruit = Color3.fromRGB(255, 110, 0)
 }
 
@@ -139,10 +144,6 @@ local T = {
     speed = false, fpsBoost = false, autoBounty = false, autoRaid = false
 }
 
-for _, b in ipairs(BOSSES) do 
-    T["boss_" .. b[1]:gsub("%s+", "")] = false 
-end
-
 -- ======================
 -- [CORE UTILITIES]
 -- ======================
@@ -153,8 +154,7 @@ local function cmd(...)
     return false
 end
 
-local function tweenTo(pos, speed)
-    speed = speed or 350
+local function tweenTo(pos)
     local r = getR()
     local h = getH()
     if r and h then
@@ -195,6 +195,7 @@ local function attackTarget(target)
     local tp = target:FindFirstChild("HumanoidRootPart") or target
     r.CFrame = tp.CFrame * CFrame.new(0, 0, 10)
     
+    local char = getC()
     local tool = char:FindFirstChildOfClass("Tool") or plr.Backpack:FindFirstChildOfClass("Tool")
     if tool then
         if tool.Parent ~= char then tool.Parent = char end
@@ -208,7 +209,7 @@ local espObjs = {}
 local function addESP(obj, color, text)
     if espObjs[obj] or not obj then return end
     local b = Instance.new("BillboardGui")
-    b.Name = "EIC_ESP_" .. math.random(1000, 9999)
+    b.Name = "Blue_ESP_" .. math.random(1000, 9999)
     b.Size = UDim2.new(0, 120, 0, 30)
     b.Adornee = obj
     b.AlwaysOnTop = true
@@ -228,7 +229,7 @@ local function addESP(obj, color, text)
 end
 
 local function clearESP()
-    for obj, b in pairs(espObjs) do
+    for _, b in pairs(espObjs) do
         if b and b.Parent then b:Destroy() end
     end
     espObjs = {}
@@ -270,16 +271,13 @@ end
 -- ======================
 -- [BACKGROUND LOOPS]
 -- ======================
--- Farming Loop
-spawn(function()
+task.spawn(function()
     while task.wait(0.15) do
         pcall(function()
             if T.autoFarm or T.autoLevel then farmCurrent() end
             if T.autoStats then
-                local pts = plr.Data.Points.Value or 0
-                if pts > 0 then
-                    cmd("AddPoint", "Melee", pts)
-                end
+                local pts = (plr:FindFirstChild("Data") and plr.Data:FindFirstChild("Points") and plr.Data.Points.Value) or 0
+                if pts > 0 then cmd("AddPoint", "Melee", pts) end
             end
             if T.autoChest then
                 for _, obj in pairs(workspace:GetChildren()) do
@@ -294,8 +292,7 @@ spawn(function()
     end
 end)
 
--- Combat / KillAura Loop
-spawn(function()
+task.spawn(function()
     while task.wait(0.1) do
         pcall(function()
             if T.killAura or T.fastAttack then
@@ -321,8 +318,7 @@ spawn(function()
     end
 end)
 
--- ESP & Item Loop
-spawn(function()
+task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
             clearESP()
@@ -344,7 +340,7 @@ spawn(function()
             if T.fruitESP then
                 for _, o in pairs(workspace:GetChildren()) do
                     if (o:IsA("Tool") or o.Name:find("Fruit")) and o:FindFirstChild("Handle") then
-                        addESP(o.Handle, C.fruit, "🍎 " .. o.Name)
+                        addESP(o.Handle, C.fruit, o.Name)
                     end
                 end
             end
@@ -353,7 +349,7 @@ spawn(function()
                 if enemiesFolder then
                     for _, e in pairs(enemiesFolder:GetChildren()) do
                         if e:FindFirstChild("HumanoidRootPart") and e:FindFirstChild("Humanoid") and e.Humanoid.Health > 0 then
-                            addESP(e.HumanoidRootPart, C.danger, "☠️ " .. e.Name)
+                            addESP(e.HumanoidRootPart, C.danger, e.Name)
                         end
                     end
                 end
@@ -362,9 +358,8 @@ spawn(function()
     end
 end)
 
--- Movement & Flight Loop
 local flying, bg, bv = false, nil, nil
-spawn(function()
+task.spawn(function()
     while task.wait(0.03) do
         pcall(function()
             local r = getR()
@@ -398,81 +393,182 @@ spawn(function()
 end)
 
 -- ======================
--- [UI CONSTRUCT]
+-- [UI CONSTRUCT: REDZ TABBED LAYOUT]
 -- ======================
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EicHubUI"
+ScreenGui.Name = "BlueHubUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Floating Logo Toggle Button
-local Logo = Instance.new("ImageButton")
-Logo.Name = "EicLogo"
+-- Floating Toggle Button
+local Logo = Instance.new("TextButton")
+Logo.Name = "BlueLogo"
 Logo.Parent = ScreenGui
-Logo.Size = UDim2.new(0, 65, 0, 65)
-Logo.Position = UDim2.new(0.03, 0, 0.4, 0)
-Logo.BackgroundColor3 = C.bg
-Logo.Image = LOGO_ASSET_ID
+Logo.Size = UDim2.new(0, 50, 0, 50)
+Logo.Position = UDim2.new(0.03, 0, 0.35, 0)
+Logo.BackgroundColor3 = C.sidebar
+Logo.Text = "BLUE"
+Logo.TextColor3 = C.accent
+Logo.TextSize = 13
+Logo.Font = Enum.Font.GothamBold
 Logo.Active = true
 
 local LogoCorner = Instance.new("UICorner", Logo)
 LogoCorner.CornerRadius = UDim.new(1, 0)
-
 local LogoStroke = Instance.new("UIStroke", Logo)
 LogoStroke.Color = C.primary
-LogoStroke.Thickness = 2.5
+LogoStroke.Thickness = 2
 
--- Fallback Text if Asset modern loader fails
-local FallbackText = Instance.new("TextLabel", Logo)
-FallbackText.Size = UDim2.new(1, 0, 1, 0)
-FallbackText.BackgroundTransparency = 1
-FallbackText.Text = "EIC"
-FallbackText.TextColor3 = C.text
-FallbackText.TextSize = 18
-FallbackText.Font = Enum.Font.GothamBold
-FallbackText.Visible = false
-
-task.spawn(function()
-    task.wait(2)
-    if Logo.ImageContentId == "" or Logo.ImageContentId == "rbxassetid://0" then
-        FallbackText.Visible = true
-    end
-end)
-
--- Main Menu Window
+-- Main Menu Frame
 local Menu = Instance.new("Frame")
-Menu.Name = "EicMenu"
+Menu.Name = "BlueMenu"
 Menu.Parent = ScreenGui
 Menu.Size = UDim2.new(0, 0, 0, 0)
-Menu.Position = UDim2.new(0.5, -310, 0.5, -200)
+Menu.Position = UDim2.new(0.5, -320, 0.5, -200)
 Menu.BackgroundColor3 = C.bg
 Menu.Visible = false
 Menu.Active = true
 Menu.ClipsDescendants = true
 
 local MenuCorner = Instance.new("UICorner", Menu)
-MenuCorner.CornerRadius = UDim.new(0, 10)
-
+MenuCorner.CornerRadius = UDim.new(0, 8)
 local MenuStroke = Instance.new("UIStroke", Menu)
 MenuStroke.Color = C.primary
 MenuStroke.Thickness = 1.5
 
--- Header Title
-local Header = Instance.new("Frame", Menu)
-Header.Size = UDim2.new(1, 0, 0, 40)
-Header.BackgroundColor3 = C.card
+-- Top Title Bar
+local TitleBar = Instance.new("Frame", Menu)
+TitleBar.Size = UDim2.new(1, 0, 0, 36)
+TitleBar.BackgroundColor3 = C.sidebar
 
-local HeaderTitle = Instance.new("TextLabel", Header)
-HeaderTitle.Size = UDim2.new(1, -20, 1, 0)
-HeaderTitle.Position = UDim2.new(0, 15, 0, 0)
-HeaderTitle.BackgroundTransparency = 1
-HeaderTitle.Text = "⚡ EIC HUB v3.0 | BLOX FRUITS OP"
-HeaderTitle.TextColor3 = C.text
-HeaderTitle.TextSize = 15
-HeaderTitle.Font = Enum.Font.GothamBold
-HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
+local TitleText = Instance.new("TextLabel", TitleBar)
+TitleText.Size = UDim2.new(1, -20, 1, 0)
+TitleText.Position = UDim2.new(0, 15, 0, 0)
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "BLUE HUB | BLOX FRUITS"
+TitleText.TextColor3 = C.text
+TitleText.TextSize = 13
+TitleText.Font = Enum.Font.GothamBold
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Toggle Menu Visibility
+-- Sidebar Tab Container
+local Sidebar = Instance.new("ScrollingFrame", Menu)
+Sidebar.Size = UDim2.new(0, 160, 1, -36)
+Sidebar.Position = UDim2.new(0, 0, 0, 36)
+Sidebar.BackgroundColor3 = C.sidebar
+Sidebar.BorderSizePixel = 0
+Sidebar.ScrollBarThickness = 2
+
+local SidebarLayout = Instance.new("UIListLayout", Sidebar)
+SidebarLayout.Padding = UDim.new(0, 4)
+
+-- Content Pages Definition
+local Pages = {
+    {name = "Farming", title = "Automation and Farm", toggles = {"autoFarm", "autoLevel", "autoMastery", "autoStats", "autoChest"}},
+    {name = "Combat", title = "Combat and PVP", toggles = {"killAura", "fastAttack", "godMode", "autoPvP", "autoBounty"}},
+    {name = "Bosses", title = "Bosses and Raids", toggles = {"autoAllBosses", "autoRaid"}},
+    {name = "Fruits", title = "Fruits and Items", toggles = {"autoCollectFruit", "autoStoreFruit", "autoRandomFruit", "fruitESP"}},
+    {name = "Visuals", title = "ESP and Visuals", toggles = {"chestESP", "enemyESP"}},
+    {name = "Movement", title = "Movement and Teleport", toggles = {"fly", "infiniteJump", "noClip", "speed"}}
+}
+
+local activeTabButton = nil
+local activePageFrame = nil
+
+for idx, tabData in ipairs(Pages) do
+    -- Create Tab Button in Sidebar
+    local TabBtn = Instance.new("TextButton", Sidebar)
+    TabBtn.Size = UDim2.new(1, -10, 0, 34)
+    TabBtn.Position = UDim2.new(0, 5, 0, 0)
+    TabBtn.BackgroundColor3 = C.card
+    TabBtn.BackgroundTransparency = 1
+    TabBtn.Text = "  " .. tabData.title
+    TabBtn.TextColor3 = C.textMuted
+    TabBtn.TextSize = 11
+    TabBtn.Font = Enum.Font.GothamMedium
+    TabBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+    local TabCorner = Instance.new("UICorner", TabBtn)
+    TabCorner.CornerRadius = UDim.new(0, 6)
+
+    -- Create Page Frame
+    local Page = Instance.new("ScrollingFrame", Menu)
+    Page.Name = tabData.name .. "Page"
+    Page.Size = UDim2.new(1, -170, 1, -46)
+    Page.Position = UDim2.new(0, 165, 0, 41)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.ScrollBarThickness = 3
+    Page.ScrollBarImageColor3 = C.primary
+
+    local PageLayout = Instance.new("UIListLayout", Page)
+    PageLayout.Padding = UDim.new(0, 8)
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
+    end)
+
+    for _, tKey in ipairs(tabData.toggles) do
+        local ToggleCard = Instance.new("Frame", Page)
+        ToggleCard.Size = UDim2.new(1, -10, 0, 38)
+        ToggleCard.BackgroundColor3 = C.card
+
+        local CardCorner = Instance.new("UICorner", ToggleCard)
+        CardCorner.CornerRadius = UDim.new(0, 6)
+
+        local Label = Instance.new("TextLabel", ToggleCard)
+        Label.Size = UDim2.new(1, -70, 1, 0)
+        Label.Position = UDim2.new(0, 12, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = tKey
+        Label.TextColor3 = C.text
+        Label.TextSize = 12
+        Label.Font = Enum.Font.Gotham
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+
+        local SwitchBtn = Instance.new("TextButton", ToggleCard)
+        SwitchBtn.Size = UDim2.new(0, 50, 0, 22)
+        SwitchBtn.Position = UDim2.new(1, -58, 0.5, -11)
+        SwitchBtn.BackgroundColor3 = T[tKey] and C.on or C.off
+        SwitchBtn.Text = T[tKey] and "ON" or "OFF"
+        SwitchBtn.TextColor3 = C.text
+        SwitchBtn.TextSize = 10
+        SwitchBtn.Font = Enum.Font.GothamBold
+
+        local SwitchCorner = Instance.new("UICorner", SwitchBtn)
+        SwitchCorner.CornerRadius = UDim.new(1, 0)
+
+        SwitchBtn.MouseButton1Click:Connect(function()
+            T[tKey] = not T[tKey]
+            SwitchBtn.BackgroundColor3 = T[tKey] and C.on or C.off
+            SwitchBtn.Text = T[tKey] and "ON" or "OFF"
+        end)
+    end
+
+    -- Tab Switching Logic
+    TabBtn.MouseButton1Click:Connect(function()
+        if activePageFrame then activePageFrame.Visible = false end
+        if activeTabButton then 
+            activeTabButton.BackgroundTransparency = 1 
+            activeTabButton.TextColor3 = C.textMuted
+        end
+        Page.Visible = true
+        TabBtn.BackgroundTransparency = 0
+        TabBtn.TextColor3 = C.text
+        activePageFrame = Page
+        activeTabButton = TabBtn
+    end)
+
+    -- Default to first tab (Farming)
+    if idx == 1 then
+        Page.Visible = true
+        TabBtn.BackgroundTransparency = 0
+        TabBtn.TextColor3 = C.text
+        activePageFrame = Page
+        activeTabButton = TabBtn
+    end
+end
+
+-- Open/Close Menu Toggle
 Logo.MouseButton1Click:Connect(function()
     if Menu.Visible then
         local closeTween = TweenService:Create(Menu, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0)})
@@ -482,11 +578,11 @@ Logo.MouseButton1Click:Connect(function()
     else
         Menu.Size = UDim2.new(0, 0, 0, 0)
         Menu.Visible = true
-        TweenService:Create(Menu, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 620, 0, 400)}):Play()
+        TweenService:Create(Menu, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 640, 0, 400)}):Play()
     end
 end)
 
--- Touch & Mouse Dragging for Logo Button
+-- Draggable Floating Button
 local dragging, dragStart, startPos = false, nil, nil
 Logo.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -508,81 +604,3 @@ UIS.InputEnded:Connect(function(input)
         dragging = false
     end
 end)
-
--- Scroll Container
-local ContentScroll = Instance.new("ScrollingFrame", Menu)
-ContentScroll.Size = UDim2.new(1, -20, 1, -55)
-ContentScroll.Position = UDim2.new(0, 10, 0, 45)
-ContentScroll.BackgroundTransparency = 1
-ContentScroll.ScrollBarThickness = 4
-ContentScroll.ScrollBarImageColor3 = C.primary
-
-local ContentLayout = Instance.new("UIListLayout", ContentScroll)
-ContentLayout.Padding = UDim.new(0, 8)
-ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    ContentScroll.CanvasSize = UDim2.new(0, 0, 0, ContentLayout.AbsoluteContentSize.Y + 20)
-end)
-
--- Categories Structure
-local CATEGORIES = {
-    {name = "🔥 AUTOMATION & FARM", color = C.on, toggles = {"autoFarm", "autoLevel", "autoMastery", "autoStats", "autoChest"}},
-    {name = "⚔️ OP COMBAT & PVP", color = C.danger, toggles = {"killAura", "fastAttack", "godMode", "autoPvP", "autoBounty"}},
-    {name = "👹 BOSS & RAID FARM", color = C.warning, toggles = {"autoAllBosses", "autoRaid"}},
-    {name = "🍎 FRUITS & ITEMS", color = C.fruit, toggles = {"autoCollectFruit", "autoStoreFruit", "autoRandomFruit", "fruitESP"}},
-    {name = "👁️ ESP & VISUALS", color = C.accent, toggles = {"chestESP", "enemyESP"}},
-    {name = "🛩️ MOVEMENT & TELEPORT", color = C.primary, toggles = {"fly", "infiniteJump", "noClip", "speed"}}
-}
-
-for _, cat in ipairs(CATEGORIES) do
-    local CategoryFrame = Instance.new("Frame", ContentScroll)
-    CategoryFrame.Size = UDim2.new(1, 0, 0, 30)
-    CategoryFrame.BackgroundColor3 = C.card
-    
-    local CatCorner = Instance.new("UICorner", CategoryFrame)
-    CatCorner.CornerRadius = UDim.new(0, 6)
-    
-    local CatStroke = Instance.new("UIStroke", CategoryFrame)
-    CatStroke.Color = cat.color
-    CatStroke.Thickness = 1
-    
-    local CatTitle = Instance.new("TextLabel", CategoryFrame)
-    CatTitle.Size = UDim2.new(1, -10, 0, 28)
-    CatTitle.Position = UDim2.new(0, 10, 0, 0)
-    CatTitle.BackgroundTransparency = 1
-    CatTitle.Text = cat.name
-    CatTitle.TextColor3 = cat.color
-    CatTitle.TextSize = 13
-    CatTitle.Font = Enum.Font.GothamBold
-    CatTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-    local Container = Instance.new("Frame", ContentScroll)
-    Container.Size = UDim2.new(1, 0, 0, 0)
-    Container.BackgroundTransparency = 1
-    
-    local Grid = Instance.new("UIGridLayout", Container)
-    Grid.CellSize = UDim2.new(0.48, 0, 0, 32)
-    Grid.CellPadding = UDim2.new(0.03, 0, 0, 6)
-    
-    for _, tKey in ipairs(cat.toggles) do
-        local Btn = Instance.new("TextButton", Container)
-        Btn.BackgroundColor3 = T[tKey] and C.on or C.off
-        Btn.Text = "  " .. tKey .. " [" .. (T[tKey] and "ON" or "OFF") .. "]"
-        Btn.TextColor3 = C.text
-        Btn.TextSize = 11
-        Btn.Font = Enum.Font.Gotham
-        Btn.TextXAlignment = Enum.TextXAlignment.Left
-
-        local BtnCorner = Instance.new("UICorner", Btn)
-        BtnCorner.CornerRadius = UDim.new(0, 4)
-
-        Btn.MouseButton1Click:Connect(function()
-            T[tKey] = not T[tKey]
-            Btn.BackgroundColor3 = T[tKey] and C.on or C.off
-            Btn.Text = "  " .. tKey .. " [" .. (T[tKey] and "ON" or "OFF") .. "]"
-        end)
-    end
-    
-    Grid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Container.Size = UDim2.new(1, 0, 0, Grid.AbsoluteContentSize.Y)
-    end)
-end
